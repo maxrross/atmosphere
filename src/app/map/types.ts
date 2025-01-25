@@ -126,21 +126,6 @@ export interface HealthRecommendation {
 }
 
 export interface FireConditionsData {
-  riskLevel: "Low" | "Moderate" | "High" | "Extreme";
-  weather: {
-    windSpeed: number;
-    windDirection: string;
-    temperature: number;
-    humidity: number;
-  };
-  vegetation: {
-    moistureContent: number;
-    density: "Low" | "Medium" | "High";
-    type: string;
-  };
-  warnings: Array<{
-    title: string;
-    description: string;
-    severity: "Low" | "Moderate" | "High";
-  }>;
+  riskScore: number;
+  explanation: string;
 }
