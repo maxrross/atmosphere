@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useMemo, useEffect } from "react"
 import { GoogleMap, useLoadScript, StreetViewPanorama, Autocomplete } from "@react-google-maps/api"
-import { Search, MapPin, Wind, Calendar, ChevronRight, Droplets, Sun, Mountain, Thermometer } from "lucide-react"
+import { Search, MapPin, Wind, Calendar, ChevronRight, Droplets, Mountain } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -179,6 +179,24 @@ const streetViewOptions = {
   fullscreenControl: false,
 }
 
+interface AqiIndex {
+  code: string;
+  aqi: number;
+  category?: string;
+  dominantPollutant?: string;
+}
+
+interface HistoryEntry {
+  label: string;
+  dateTime: string;
+  indexes: AqiIndex[];
+}
+
+interface AirQualityPollutant {
+  concentration: { value: number };
+  code: string;
+}
+
 export default function MapPage() {
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
@@ -186,7 +204,6 @@ export default function MapPage() {
   })
 
   const [showStreetView, setShowStreetView] = useState(false)
-  const [searchValue, setSearchValue] = useState("")
   const mapRef = useRef<google.maps.Map | null>(null)
   const searchBoxRef = useRef<google.maps.places.Autocomplete | null>(null)
   const [currentLocation, setCurrentLocation] = useState(defaultLocation)
@@ -230,11 +247,11 @@ export default function MapPage() {
       // Only process data if it's available and doesn't contain errors
       if (airQualityData && !airQualityData.error) {
         // Function to determine which AQI to use based on region
-        const getPreferredAqiIndex = (indexes: any[], regionCode: string) => {
+        const getPreferredAqiIndex = (indexes: AqiIndex[], regionCode: string) => {
           if (regionCode === 'us') {
-            return indexes?.find((idx: { code: string }) => idx.code === 'usa_epa') || indexes?.[0];
+            return indexes?.find((idx) => idx.code === 'usa_epa') || indexes?.[0];
           }
-          return indexes?.find((idx: { code: string }) => idx.code === 'uaqi') || indexes?.[0];
+          return indexes?.find((idx) => idx.code === 'uaqi') || indexes?.[0];
         }
 
         // Get the appropriate AQI index based on region
@@ -242,7 +259,7 @@ export default function MapPage() {
 
         // Process air quality data
         const pollutants: { [key: string]: { concentration: number; aqi: number; additionalInfo?: { sources: string; effects: string } } } = {}
-        airQualityData?.pollutants?.forEach((pollutant: any) => {
+        airQualityData?.pollutants?.forEach((pollutant: AirQualityPollutant) => {
           pollutants[pollutant.code] = {
             concentration: pollutant.concentration?.value || 0,
             aqi: 0,
@@ -252,7 +269,7 @@ export default function MapPage() {
 
         // Process history data if available
         const processedHistory = historyData && !historyData.error ? 
-          historyData.map((entry: any) => ({
+          historyData.map((entry: HistoryEntry) => ({
             ...entry,
             preferredIndex: getPreferredAqiIndex(entry.indexes, airQualityData.regionCode)
           })) : [];
