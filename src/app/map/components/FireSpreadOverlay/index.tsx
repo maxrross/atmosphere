@@ -273,7 +273,7 @@ export const FireSpreadOverlay: React.FC<FireSpreadOverlayProps> = ({
       }
 
       const elapsed = timestamp - lastUpdateTime.current;
-      const duration = 1500; // 1.5 seconds per transition
+      const duration = 3000; // 3 seconds per transition for slower growth
 
       animationProgress.current = (elapsed % duration) / duration;
 
@@ -318,42 +318,47 @@ export const FireSpreadOverlay: React.FC<FireSpreadOverlayProps> = ({
   if (!simulationData) return null;
 
   return (
-    <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-20 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200/50 p-2">
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => {
-            setCurrentTimeIndex(0);
-            lastUpdateTime.current = 0;
-            animationProgress.current = 0;
-          }}
-          className="p-1 hover:bg-slate-100 rounded"
-          title="Restart"
-        >
-          <SkipBack size={20} />
-        </button>
-        <button
-          onClick={() => setIsPlaying(!isPlaying)}
-          className="p-1 hover:bg-slate-100 rounded"
-          title={isPlaying ? "Pause" : "Play"}
-        >
-          {isPlaying ? <PauseCircle size={24} /> : <PlayCircle size={24} />}
-        </button>
-        <button
-          onClick={() => {
-            setCurrentTimeIndex(simulationData.timeframes.length - 1);
-            lastUpdateTime.current = 0;
-            animationProgress.current = 1;
-          }}
-          className="p-1 hover:bg-slate-100 rounded"
-          title="Skip to end"
-        >
-          <SkipForward size={20} />
-        </button>
-        <div className="text-sm text-slate-600 ml-2">
-          {simulationData.timeframes[currentTimeIndex].hours}h
-        </div>
-        <div className="text-xs text-slate-500 ml-2 max-w-[200px] truncate">
+    <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2">
+      <div className="bg-black/80 backdrop-blur-sm rounded-lg shadow-lg px-4 py-2 text-white text-center max-w-xl">
+        <p className="text-sm font-medium">
           {simulationData.timeframes[currentTimeIndex].impact}
+        </p>
+      </div>
+
+      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200/50 p-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setCurrentTimeIndex(0);
+              lastUpdateTime.current = 0;
+              animationProgress.current = 0;
+            }}
+            className="p-1 hover:bg-slate-100 rounded"
+            title="Restart"
+          >
+            <SkipBack size={20} />
+          </button>
+          <button
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="p-1 hover:bg-slate-100 rounded"
+            title={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? <PauseCircle size={24} /> : <PlayCircle size={24} />}
+          </button>
+          <button
+            onClick={() => {
+              setCurrentTimeIndex(simulationData.timeframes.length - 1);
+              lastUpdateTime.current = 0;
+              animationProgress.current = 1;
+            }}
+            className="p-1 hover:bg-slate-100 rounded"
+            title="Skip to end"
+          >
+            <SkipForward size={20} />
+          </button>
+          <div className="text-sm font-medium text-slate-700 ml-2">
+            {simulationData.timeframes[currentTimeIndex].hours}h
+          </div>
         </div>
       </div>
     </div>

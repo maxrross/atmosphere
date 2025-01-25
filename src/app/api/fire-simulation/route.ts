@@ -95,14 +95,14 @@ Consider factors like:
 - Natural barriers (rivers, mountains)
 - Wind direction and speed
 
-For each timeframe (12 hours, 24 hours, 48 hours, and 96 hours), provide:
-1. A realistic spread radius in kilometers from the origin point, considering terrain and conditions
-2. A description of the fire's impact and behavior
+For each timeframe (1 hour, 12 hours, 24 hours, 48 hours, and 96 hours), provide:
+1. A realistic spread radius in kilometers from the origin point
+2. A single, concise sentence describing the fire's current state and behavior at this time
 
 Format the response with:
-- hours: number (12, 24, 48, or 96)
+- hours: number (1, 12, 24, 48, or 96)
 - radius: number (realistic spread distance in kilometers)
-- impact: string (detailed description of fire behavior and impact) Make sure that the fire never goes over into water/ocean/rivers/lakes/oceans/etc.`;
+- impact: string (ONE clear sentence about current fire state)`;
 
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -166,10 +166,14 @@ Format the response with:
   } catch (error) {
     console.error("Error in fire simulation:", error);
     // Return a minimal simulation if there's an error
-    const fallbackTimeframes = [12, 24, 48, 96].map((hours) => ({
+    const fallbackTimeframes = [1, 12, 24, 48, 96].map((hours) => ({
       hours,
-      coordinates: generatePolygonPoints(lat, lng, hours / 6), // Simple radius based on hours
-      impact: "Fire spreading based on local conditions",
+      coordinates: generatePolygonPoints(lat, lng, Math.sqrt(hours) * 0.5), // Slower initial growth
+      impact: `Fire has spread ${
+        Math.sqrt(hours) * 0.5
+      }km from the origin point after ${hours} ${
+        hours === 1 ? "hour" : "hours"
+      }.`,
     }));
 
     return NextResponse.json({
