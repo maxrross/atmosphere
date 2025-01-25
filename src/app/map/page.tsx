@@ -197,6 +197,121 @@ interface AirQualityPollutant {
   code: string;
 }
 
+interface HealthRecommendation {
+  risk: string;
+  generalAdvice: string;
+  sensitiveGroups: string[];
+  outdoorActivities: {
+    avoid: string[];
+    bestHours: string;
+  };
+}
+
+// Move these functions outside of MapPage, after the pollutantInfo constant
+const getGeneralHealthAdvice = (aqi: number, highPollen: boolean): string => {
+  if (aqi > 150) return 'Limit outdoor activities. Keep windows closed. Use air purifiers if available.';
+  if (aqi > 100) return 'Consider reducing extended outdoor activities during peak hours.';
+  if (highPollen) return 'Monitor pollen forecasts. Keep windows closed during high pollen times.';
+  return 'Air quality is good for most outdoor activities.';
+};
+
+const getHealthRecommendations = (airQuality?: LocationData['airQuality'], pollen?: LocationData['pollen']): HealthRecommendation => {
+  const aqi = airQuality?.aqi || 0;
+  const pollenLevels = Object.values(pollen || {}).some(p => p.risk === 'High' || p.risk === 'Very High');
+  
+  const sensitiveGroups: string[] = [];
+  if (aqi > 100) sensitiveGroups.push('People with respiratory conditions');
+  if (aqi > 150) sensitiveGroups.push('Children and elderly');
+  if (pollenLevels) sensitiveGroups.push('Allergy sufferers');
+  
+  let risk = 'Low';
+  if (aqi > 150 || pollenLevels) risk = 'High';
+  else if (aqi > 100) risk = 'Moderate';
+  
+  const outdoorActivities = {
+    avoid: [] as string[],
+    bestHours: '6 AM - 10 AM'
+  };
+  
+  if (aqi > 150) {
+    outdoorActivities.avoid.push('Intense exercise');
+    outdoorActivities.bestHours = 'Limited outdoor activity recommended';
+  } else if (aqi > 100) {
+    outdoorActivities.avoid.push('Extended outdoor exercise');
+    outdoorActivities.bestHours = '6 AM - 9 AM';
+  }
+  
+  if (pollenLevels) {
+    outdoorActivities.bestHours = 'After light rain or in the evening';
+    outdoorActivities.avoid.push('Peak pollen hours (10 AM - 4 PM)');
+  }
+  
+  return {
+    risk,
+    generalAdvice: getGeneralHealthAdvice(aqi, pollenLevels),
+    sensitiveGroups,
+    outdoorActivities,
+  };
+};
+
+const HealthPanel = ({ locationData, isLoading, mapZoom }: { locationData: LocationData; isLoading: boolean; mapZoom: number }) => {
+  const recommendations = getHealthRecommendations(locationData.airQuality, locationData.pollen);
+  
+  if (isLoading || mapZoom < 10) return null;
+  
+  return (
+    <div className="absolute left-4 mt-2 top-[41rem] z-10 w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200/50 p-4 transition-opacity duration-300">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-semibold bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 bg-clip-text text-transparent">
+          Health Recommendations
+        </h2>
+        <div className={`px-2 py-1 rounded text-sm ${
+          recommendations.risk === 'High' ? 'bg-red-100 text-red-700' :
+          recommendations.risk === 'Moderate' ? 'bg-yellow-100 text-yellow-700' :
+          'bg-green-100 text-green-700'
+        }`}>
+          {recommendations.risk} Risk
+        </div>
+      </div>
+      
+      <div className="space-y-4">
+        <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
+          <div className="text-sm text-slate-700 mb-2">{recommendations.generalAdvice}</div>
+          
+          {recommendations.sensitiveGroups.length > 0 && (
+            <div className="mt-2">
+              <div className="text-sm font-medium text-slate-800 mb-1">Sensitive Groups:</div>
+              <ul className="text-sm text-slate-600 list-disc list-inside">
+                {recommendations.sensitiveGroups.map((group, i) => (
+                  <li key={i}>{group}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+        
+        <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
+          <div className="text-sm font-medium text-slate-800 mb-2">Outdoor Activities</div>
+          
+          <div className="space-y-3">
+            <div>
+              <div className="text-xs text-slate-500 mb-1">Recommended Hours</div>
+              <div className="text-sm text-slate-700">{recommendations.outdoorActivities.bestHours}</div>
+            </div>
+            
+            {recommendations.outdoorActivities.avoid.length > 0 && (
+              <div>
+                <div className="text-xs text-slate-500 mb-1">Activities to Avoid</div>
+                <div className="text-sm text-slate-700">{recommendations.outdoorActivities.avoid.join(', ')}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function MapPage() {
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
@@ -445,8 +560,10 @@ export default function MapPage() {
     return "Very High"
   }
 
+  const recommendations = getHealthRecommendations(locationData.airQuality, locationData.pollen);
+
   const AirQualityPanel = useMemo(() => (
-    <div className={`absolute top-40 left-4 z-10 w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200/50 p-4 transition-opacity duration-300 ${mapZoom < 10 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+    <div className={`absolute top-24 left-4 z-10 w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200/50 p-4 transition-opacity duration-300 ${mapZoom < 10 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
       <div className="">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-black bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 bg-clip-text text-transparent">
@@ -495,13 +612,24 @@ export default function MapPage() {
                 <div className="h-4 bg-slate-200/50 animate-pulse rounded w-12"></div>
               </div>
             </div>
+
+            {/* Health Panel Skeleton */}
+            <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="h-5 bg-slate-200/50 animate-pulse rounded w-40"></div>
+                <div className="h-6 w-20 bg-slate-200/50 animate-pulse rounded"></div>
+              </div>
+              <div className="space-y-3">
+                <div className="h-16 bg-slate-200/50 animate-pulse rounded"></div>
+                <div className="h-20 bg-slate-200/50 animate-pulse rounded"></div>
+              </div>
+            </div>
           </div>
         ) : (
           <>
           <div className="text-sm text-slate-600 pb-2 pt-1">{locationData.address}</div>
 
           <div className="space-y-4">
-            
             <div className="space-y-3 mt-2">
               <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
                 <div className="flex items-center justify-between">
@@ -645,13 +773,68 @@ export default function MapPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Health Recommendations Section */}
+              <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-medium bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 bg-clip-text text-transparent">
+                    Health Recommendations
+                  </h3>
+                  {!isLoading && (
+                    <div className={`px-2 py-1 rounded text-sm ${
+                      recommendations.risk === 'High' ? 'bg-red-100 text-red-700' :
+                      recommendations.risk === 'Moderate' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-green-100 text-green-700'
+                    }`}>
+                      {recommendations.risk} Risk
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="text-sm text-slate-700">{recommendations.generalAdvice}</div>
+                    
+                    {recommendations.sensitiveGroups.length > 0 && (
+                      <div>
+                        <div className="text-sm font-medium text-slate-800">Sensitive Groups:</div>
+                        <ul className="text-sm text-slate-600 list-disc list-inside">
+                          {recommendations.sensitiveGroups.map((group, i) => (
+                            <li key={i}>{group}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {recommendations.risk !== 'Low' && (
+                    <div>
+                      <div className="text-sm font-medium text-slate-800 mb-2">Outdoor Activities</div>
+                      
+                      <div className="space-y-2">
+                        <div>
+                          <div className="text-xs text-slate-500">Recommended Hours</div>
+                          <div className="text-sm text-slate-700">{recommendations.outdoorActivities.bestHours}</div>
+                        </div>
+                        
+                        {recommendations.outdoorActivities.avoid.length > 0 && (
+                          <div>
+                            <div className="text-xs text-slate-500">Activities to Avoid</div>
+                            <div className="text-sm text-slate-700">{recommendations.outdoorActivities.avoid.join(', ')}</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
           </>
         )}
       </div>
     </div>
-  ), [locationData, isLoading, mapZoom])
+  ), [locationData, isLoading, mapZoom, recommendations])
 
   if (!isLoaded) {
     return (
@@ -692,7 +875,7 @@ export default function MapPage() {
       </div>
 
       {AirQualityPanel}
-
+      
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={currentLocation}
@@ -706,7 +889,7 @@ export default function MapPage() {
         }}
       >
         {streetViewComponent}
-            </GoogleMap>
+      </GoogleMap>
 
       <div className="absolute bottom-4 right-4 z-10 flex gap-2">
         <button
