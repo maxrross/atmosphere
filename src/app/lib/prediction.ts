@@ -31,7 +31,7 @@ function parseDateToFeatures(dateString: string) {
 
   // day of year in [1..366]
   const startOfYear = new Date(fullYear, 0, 1);
-  const dayIndex = Math.floor((date - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
+  const dayIndex = Math.floor((date.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   const dayOfYear = Math.max(1, Math.min(dayIndex, 366));
   const [daySin, dayCos] = encodeCyclical(dayOfYear, 366);
 
