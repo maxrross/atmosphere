@@ -211,8 +211,6 @@ export default function MapPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [mapZoom, setMapZoom] = useState(3)
   const [showHeatmap, setShowHeatmap] = useState(false)
-  const [airQuality, setAirQuality] = useState<LocationData['airQuality'] | null>(null);
-  const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
 
   const fetchLocationData = useCallback(async (lat: number, lng: number) => {
     setIsLoading(true)
