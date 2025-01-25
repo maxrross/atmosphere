@@ -33,14 +33,20 @@ export interface LocationData {
     grass: {
       index: number;
       risk: string;
+      inSeason: boolean;
+      recommendations: string[];
     };
     tree: {
       index: number;
       risk: string;
+      inSeason: boolean;
+      recommendations: string[];
     };
     weed: {
       index: number;
       risk: string;
+      inSeason: boolean;
+      recommendations: string[];
     };
   };
   uvData?: {

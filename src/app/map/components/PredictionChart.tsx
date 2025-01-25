@@ -76,7 +76,7 @@ export const PredictionChart = ({
                 stroke="#0f172a"
                 strokeWidth={2}
                 name="Overall AQI"
-                dot={{ fill: "#0f172a", r: 2 }}
+                dot={false}
               />
               <Line
                 type="monotone"
@@ -84,7 +84,7 @@ export const PredictionChart = ({
                 stroke="#3b82f6"
                 strokeWidth={1}
                 name="O₃ AQI"
-                dot={{ fill: "#3b82f6", r: 2 }}
+                dot={false}
               />
               <Line
                 type="monotone"
@@ -92,7 +92,7 @@ export const PredictionChart = ({
                 stroke="#ef4444"
                 strokeWidth={1}
                 name="CO AQI"
-                dot={{ fill: "#ef4444", r: 2 }}
+                dot={false}
               />
               <Line
                 type="monotone"
@@ -100,7 +100,7 @@ export const PredictionChart = ({
                 stroke="#eab308"
                 strokeWidth={1}
                 name="SO₂ AQI"
-                dot={{ fill: "#eab308", r: 2 }}
+                dot={false}
               />
               <Line
                 type="monotone"
@@ -108,7 +108,7 @@ export const PredictionChart = ({
                 stroke="#84cc16"
                 strokeWidth={1}
                 name="NO₂ AQI"
-                dot={{ fill: "#84cc16", r: 2 }}
+                dot={false}
               />
             </LineChart>
           </ResponsiveContainer>

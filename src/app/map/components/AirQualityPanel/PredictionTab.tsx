@@ -1,6 +1,17 @@
-import { Calendar, ChartLine } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { ChartLine } from "lucide-react";
 import { PredictionChart } from "../PredictionChart";
 import { PredictionData } from "../../types";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { format, addDays } from "date-fns";
+import { cn } from "@/lib/utils";
+import { getAqiColor } from "../../utils";
 
 interface PredictionTabProps {
   isPredictionLoading: boolean;
@@ -27,53 +38,42 @@ export const PredictionTab = ({
     );
   }
 
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      // Add one day to compensate for timezone offset
+      const adjustedDate = addDays(date, 1);
+      onDateChange(format(adjustedDate, "yyyy-MM-dd"));
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="space-y-3">
-        <div className="flex justify-between items-center">
-          <h3 className="text-sm font-medium text-slate-900">
-            Specific Date Prediction
-          </h3>
-          <div className="relative">
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => onDateChange(e.target.value)}
-              className="pl-10 pr-4 py-1.5 border border-slate-200 rounded-lg bg-white/90 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+      <div className="flex justify-between items-center">
+        <h3 className="text-sm font-medium text-slate-900">
+          AQI Prediction
+        </h3>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-[240px] justify-start text-left font-normal",
+                !selectedDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {selectedDate ? format(new Date(selectedDate), "PPP") : <span>Pick a date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="end">
             <Calendar
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"
-              size={16}
+              mode="single"
+              selected={selectedDate ? new Date(selectedDate) : undefined}
+              onSelect={handleDateSelect}
+              initialFocus
             />
-          </div>
-        </div>
-
-        <div className="bg-white/90 rounded-lg border border-slate-200/50 p-4">
-          <div className="grid grid-cols-5 gap-4">
-            {[
-              { label: "Overall AQI", key: "overallAQI" },
-              { label: "O₃ AQI", key: "o3" },
-              { label: "CO AQI", key: "co" },
-              { label: "SO₂ AQI", key: "so2" },
-              { label: "NO₂ AQI", key: "no2" },
-            ].map(({ label, key }) => (
-              <div key={label} className="text-center">
-                <div className="text-xs text-slate-600 mb-1">{label}</div>
-                <div className="text-lg font-semibold text-slate-900">
-                  {specificPrediction
-                    ? Math.round(
-                        key === "overallAQI"
-                          ? specificPrediction[key]
-                          : specificPrediction[
-                              key as keyof Omit<PredictionData, "overallAQI">
-                            ].aqi
-                      )
-                    : "-"}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
@@ -87,6 +87,41 @@ export const PredictionTab = ({
           predictionData={predictionData}
           timeRanges={timeRanges}
         />
+      </div>
+
+      <div className="bg-white/90 rounded-lg border border-slate-200/50 p-4">
+        <div className="grid grid-cols-5 gap-4">
+          {[
+            { label: "Overall AQI", key: "overallAQI" },
+            { label: "O₃ AQI", key: "o3" },
+            { label: "CO AQI", key: "co" },
+            { label: "SO₂ AQI", key: "so2" },
+            { label: "NO₂ AQI", key: "no2" },
+          ].map(({ label, key }) => {
+            const value = specificPrediction
+              ? Math.round(
+                  key === "overallAQI"
+                    ? specificPrediction[key]
+                    : specificPrediction[
+                        key as keyof Omit<PredictionData, "overallAQI">
+                      ].aqi
+                )
+              : 0;
+            return (
+              <div key={label} className="flex flex-col space-y-2">
+                <div className="text-xs text-slate-600 h-8 flex items-center justify-center text-center">
+                  {label}
+                </div>
+                <div className={cn(
+                  "text-lg font-semibold h-8 flex items-center justify-center text-center",
+                  getAqiColor(value)
+                )}>
+                  {specificPrediction ? value : "-"}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

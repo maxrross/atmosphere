@@ -91,3 +91,11 @@ export const getHealthRecommendations = (
     outdoorActivities,
   };
 };
+
+export const getSafeExposureMinutes = (uv: number): number => {
+  if (uv <= 2) return 60; // Low - 60 minutes
+  if (uv <= 5) return 30; // Moderate - 30 minutes
+  if (uv <= 7) return 20; // High - 20 minutes
+  if (uv <= 10) return 15; // Very High - 15 minutes
+  return 10; // Extreme - 10 minutes or less
+};

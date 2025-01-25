@@ -14,7 +14,7 @@ import {
   mapOptions,
   streetViewOptions,
 } from "./constants";
-import { getHealthRecommendations } from "./utils";
+import { getHealthRecommendations, getAqiLevel, getSafeExposureMinutes } from "./utils";
 import type { LocationData, PredictionData } from "./types";
 
 export default function MapPage() {
@@ -66,12 +66,8 @@ export default function MapPage() {
           },
           body: JSON.stringify({ lat, lng, hours: 120 }), // Fixed at 5 days of history
         }),
-        fetch("/api/uv-data", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ lat, lng, alt: elevation || 0 }),
+        fetch(`/api/uv-data?lat=${lat}&lng=${lng}&alt=${elevation || 0}`, {
+          method: "GET",
         }),
       ]);
 
@@ -124,34 +120,21 @@ export default function MapPage() {
           airQuality: {
             aqi: preferredIndex?.aqi || 0,
             mainPollutant: preferredIndex?.dominantPollutant || "Unknown",
-            level: "Unknown",
+            level: getAqiLevel(preferredIndex?.aqi || 0),
             pollutants,
           },
           regionCode: airQualityData.regionCode,
           history: processedHistory,
-          pollen:
-            pollenData && !pollenData.error
-              ? {
-                  grass: {
-                    index: pollenData.grassIndex,
-                    risk: "Unknown",
-                  },
-                  tree: {
-                    index: pollenData.treeIndex,
-                    risk: "Unknown",
-                  },
-                  weed: {
-                    index: pollenData.weedIndex,
-                    risk: "Unknown",
-                  },
-                }
-              : undefined,
-          uvData: uvData?.result
+          pollen: pollenData,
+          uvData: uvData?.ok
             ? {
-                uv: uvData.result.uv,
-                uvMax: uvData.result.uv_max,
-                uvMaxTime: uvData.result.uv_max_time,
-                safeExposureMinutes: uvData.result.safe_exposure_time?.st1 || 0,
+                uv: uvData.now.uvi,
+                uvMax: Math.max(...uvData.forecast.map((f: { uvi: number }) => f.uvi)),
+                uvMaxTime: uvData.forecast.reduce((maxTime: string, f: { time: string, uvi: number }) => 
+                  f.uvi > uvData.forecast.find((x: { time: string, uvi: number }) => x.time === maxTime)?.uvi ? f.time : maxTime, 
+                  uvData.forecast[0].time
+                ),
+                safeExposureMinutes: getSafeExposureMinutes(uvData.now.uvi),
               }
             : undefined,
           elevation,

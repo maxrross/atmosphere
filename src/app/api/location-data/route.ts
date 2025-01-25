@@ -30,6 +30,17 @@ export async function POST(request: Request) {
       }
     )
 
+    // Fetch pollen data from Google Pollen API
+    const pollenResponse = await fetch(
+      `https://pollen.googleapis.com/v1/forecast:lookup?key=${apiKey}&location.longitude=${lng}&location.latitude=${lat}&days=1&languageCode=en`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+
     // Calculate timestamps for specific points in time
     const now = new Date()
     const timePoints = [
@@ -74,6 +85,7 @@ export async function POST(request: Request) {
     )
 
     let airQualityData = null
+    let pollenData = null
 
     if (airQualityResponse.ok) {
       airQualityData = await airQualityResponse.json()
@@ -82,17 +94,53 @@ export async function POST(request: Request) {
       console.error('Air Quality API Error:', errorText)
     }
 
-    // For now, return mock pollen data since the API is not working
-    const mockPollenData = {
-      grassIndex: Math.floor(Math.random() * 6),
-      treeIndex: Math.floor(Math.random() * 6),
-      weedIndex: Math.floor(Math.random() * 6)
+    if (pollenResponse.ok) {
+      const pollenResult = await pollenResponse.json()
+      const pollenTypes = pollenResult.dailyInfo[0]?.pollenTypeInfo || []
+      
+      const getPollenInfo = (code: string) => {
+        const info = pollenTypes.find(p => p.code === code)
+        if (!info) {
+          return {
+            index: 0,
+            risk: "Unknown",
+            inSeason: false,
+            recommendations: []
+          }
+        }
+        
+        if (!info.inSeason) {
+          return {
+            index: 0,
+            risk: "Out of Season",
+            inSeason: false,
+            recommendations: []
+          }
+        }
+
+        return {
+          index: info.indexInfo?.value ?? 0,
+          risk: info.indexInfo?.category ?? "Unknown",
+          inSeason: true,
+          recommendations: info.healthRecommendations ?? []
+        }
+      }
+
+      pollenData = {
+        grass: getPollenInfo('GRASS'),
+        tree: getPollenInfo('TREE'),
+        weed: getPollenInfo('WEED')
+      }
+    } else {
+      const errorText = await pollenResponse.text()
+      console.error('Pollen API Error Status:', pollenResponse.status)
+      console.error('Pollen API Error:', errorText)
     }
 
     return NextResponse.json({ 
       airQualityData, 
       historyData: historyResults.filter(Boolean),
-      pollenData: mockPollenData 
+      pollenData 
     })
   } catch (error) {
     console.error('Error fetching location data:', error)
