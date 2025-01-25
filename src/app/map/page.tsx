@@ -255,8 +255,10 @@ export default function MapPage() {
   const handlePlaceSelect = useCallback(
     (lat: number, lng: number) => {
       if (mapRef.current) {
-        mapRef.current.setZoom(14);
+        mapRef.current.setZoom(17);
         mapRef.current.panTo({ lat, lng });
+
+        mapRef.current.setMapTypeId("hybrid");
       }
       setCurrentLocation({ lat, lng });
       fetchLocationData(lat, lng);
@@ -365,6 +367,49 @@ export default function MapPage() {
   const recommendations = getHealthRecommendations(
     locationData.airQuality,
     locationData.pollen
+  );
+
+  const mapOptions = useMemo(
+    () => ({
+      disableDefaultUI: true,
+      minZoom: 2,
+      maxZoom: 20,
+      mapTypeId: "hybrid",
+      tilt: 45,
+      streetView: null as google.maps.StreetViewPanorama | null,
+      restriction: {
+        latLngBounds: {
+          north: 85,
+          south: -85,
+          west: -180,
+          east: 180,
+        },
+        strictBounds: true,
+      },
+      styles: [
+        {
+          featureType: "all",
+          elementType: "labels",
+          stylers: [{ visibility: "off" }],
+        },
+        {
+          featureType: "administrative.country",
+          elementType: "geometry.stroke",
+          stylers: [{ visibility: "on" }, { color: "#ffffff50" }],
+        },
+        {
+          featureType: "water",
+          elementType: "geometry.fill",
+          stylers: [{ color: "#1a365d" }],
+        },
+        {
+          featureType: "landscape",
+          elementType: "geometry.fill",
+          stylers: [{ color: "#1e293b" }],
+        },
+      ],
+    }),
+    []
   );
 
   if (!isLoaded) {

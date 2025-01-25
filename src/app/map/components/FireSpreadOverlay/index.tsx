@@ -23,42 +23,70 @@ const createFireOverlay = (google: typeof globalThis.google) => {
   return class FireOverlay extends google.maps.OverlayView {
     private div: HTMLDivElement | null = null;
     private currentPolygon: google.maps.Polygon | null = null;
+    private isVisible: boolean = true;
 
     constructor() {
       super();
     }
 
     onAdd() {
-      // Create the DIV for holding the polygon
       this.div = document.createElement("div");
       this.div.style.position = "absolute";
 
-      // Add the element to the overlay layer
       const panes = this.getPanes();
       if (panes) {
         panes.overlayLayer.appendChild(this.div);
       }
+
+      // Add zoom change listener to handle visibility
+      const map = this.getMap() as google.maps.Map;
+      if (map) {
+        google.maps.event.addListener(map, "zoom_changed", () => {
+          const zoom = map.getZoom();
+          if (zoom !== undefined) {
+            this.handleZoomChange(zoom);
+          }
+        });
+      }
+    }
+
+    handleZoomChange(zoom: number) {
+      if (zoom < 10 && this.isVisible) {
+        this.hide();
+      } else if (zoom >= 10 && !this.isVisible) {
+        this.show();
+      }
+    }
+
+    hide() {
+      this.isVisible = false;
+      if (this.currentPolygon) {
+        this.currentPolygon.setMap(null);
+      }
+    }
+
+    show() {
+      this.isVisible = true;
+      if (this.currentPolygon) {
+        this.currentPolygon.setMap(this.getMap() as google.maps.Map);
+      }
     }
 
     draw() {
-      if (!this.div || !this.currentPolygon) return;
+      if (!this.div || !this.currentPolygon || !this.isVisible) return;
 
-      // Get the projection from the overlay to convert LatLng to pixel coordinates
       const overlayProjection = this.getProjection();
       if (!overlayProjection) return;
 
-      // Get the bounds of the polygon
       const bounds = new google.maps.LatLngBounds();
       const path = this.currentPolygon.getPath();
       path.forEach((coord) => bounds.extend(coord));
 
-      // Convert bounds to pixel coordinates
       const sw = overlayProjection.fromLatLngToDivPixel(bounds.getSouthWest());
       const ne = overlayProjection.fromLatLngToDivPixel(bounds.getNorthEast());
 
       if (!sw || !ne) return;
 
-      // Position the div
       this.div.style.left = sw.x + "px";
       this.div.style.top = ne.y + "px";
       this.div.style.width = ne.x - sw.x + "px";
@@ -81,26 +109,19 @@ const createFireOverlay = (google: typeof globalThis.google) => {
       endCoords: Coordinate[],
       progress: number
     ) {
-      console.log("Updating polygon with:", {
-        startCoords,
-        endCoords,
-        progress,
-      });
-
-      if (!startCoords?.length || !endCoords?.length) {
-        console.error("Invalid coordinates provided:", {
+      if (!startCoords?.length || !endCoords?.length || !this.isVisible) {
+        console.error("Invalid coordinates provided or overlay hidden:", {
           startCoords,
           endCoords,
+          isVisible: this.isVisible,
         });
         return;
       }
 
-      // Clear previous polygon
       if (this.currentPolygon) {
         this.currentPolygon.setMap(null);
       }
 
-      // Interpolate between start and end coordinates
       const interpolatedCoords = startCoords.map((start, index) => {
         const end = endCoords[index] || endCoords[endCoords.length - 1];
         return {
@@ -109,7 +130,6 @@ const createFireOverlay = (google: typeof globalThis.google) => {
         };
       });
 
-      // Create new polygon with interpolated coordinates
       this.currentPolygon = new google.maps.Polygon({
         paths: interpolatedCoords,
         strokeColor: "#FF4444",
@@ -123,7 +143,6 @@ const createFireOverlay = (google: typeof globalThis.google) => {
         clickable: true,
       });
 
-      // Add hover effect
       google.maps.event.addListener(this.currentPolygon, "mouseover", () => {
         if (this.currentPolygon) {
           this.currentPolygon.setOptions({
@@ -142,7 +161,6 @@ const createFireOverlay = (google: typeof globalThis.google) => {
         }
       });
 
-      // Add click listener to show info window
       google.maps.event.addListener(
         this.currentPolygon,
         "click",
@@ -154,9 +172,9 @@ const createFireOverlay = (google: typeof globalThis.google) => {
 
           const infoWindow = new google.maps.InfoWindow({
             content: `<div style="padding: 8px;">
-            <strong>Fire Spread Area</strong><br>
-            ${areaInKm} km²
-          </div>`,
+              <strong>Fire Spread Area</strong><br>
+              ${areaInKm} km²
+            </div>`,
             position: e.latLng,
           });
 
@@ -164,7 +182,6 @@ const createFireOverlay = (google: typeof globalThis.google) => {
         }
       );
 
-      // Trigger a redraw
       this.draw();
     }
   };
