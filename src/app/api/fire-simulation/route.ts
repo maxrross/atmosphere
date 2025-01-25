@@ -24,7 +24,7 @@ const structuredSchema = {
 };
 
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash",
+  model: "gemini-2.0-flash-exp",
   generationConfig: {
     responseMimeType: "application/json",
     responseSchema: structuredSchema,
@@ -102,7 +102,7 @@ For each timeframe (12 hours, 24 hours, 48 hours, and 96 hours), provide:
 Format the response with:
 - hours: number (12, 24, 48, or 96)
 - radius: number (realistic spread distance in kilometers)
-- impact: string (detailed description of fire behavior and impact)`;
+- impact: string (detailed description of fire behavior and impact) Make sure that the fire never goes over into water/ocean/rivers/lakes/oceans/etc.`;
 
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
