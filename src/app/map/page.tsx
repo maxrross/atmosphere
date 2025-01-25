@@ -138,6 +138,7 @@ const mapOptions = {
   zoom: 3,
   mapTypeId: "hybrid",
   tilt: 45,
+  streetView: null as google.maps.StreetViewPanorama | null,
   restriction: {
     latLngBounds: {
       north: 85,
@@ -261,64 +262,6 @@ const getHealthRecommendations = (airQuality?: LocationData['airQuality'], polle
   };
 };
 
-const HealthPanel = ({ locationData, isLoading, mapZoom }: { locationData: LocationData; isLoading: boolean; mapZoom: number }) => {
-  const recommendations = getHealthRecommendations(locationData.airQuality, locationData.pollen);
-  
-  if (isLoading || mapZoom < 10) return null;
-  
-  return (
-    <div className="absolute left-4 mt-2 top-[41rem] z-10 w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200/50 p-4 transition-opacity duration-300">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 bg-clip-text text-transparent">
-          Health Recommendations
-        </h2>
-        <div className={`px-2 py-1 rounded text-sm ${
-          recommendations.risk === 'High' ? 'bg-red-100 text-red-700' :
-          recommendations.risk === 'Moderate' ? 'bg-yellow-100 text-yellow-700' :
-          'bg-green-100 text-green-700'
-        }`}>
-          {recommendations.risk} Risk
-        </div>
-      </div>
-      
-      <div className="space-y-4">
-        <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
-          <div className="text-sm text-slate-700 mb-2">{recommendations.generalAdvice}</div>
-          
-          {recommendations.sensitiveGroups.length > 0 && (
-            <div className="mt-2">
-              <div className="text-sm font-medium text-slate-800 mb-1">Sensitive Groups:</div>
-              <ul className="text-sm text-slate-600 list-disc list-inside">
-                {recommendations.sensitiveGroups.map((group, i) => (
-                  <li key={i}>{group}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-        
-        <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
-          <div className="text-sm font-medium text-slate-800 mb-2">Outdoor Activities</div>
-          
-          <div className="space-y-3">
-            <div>
-              <div className="text-xs text-slate-500 mb-1">Recommended Hours</div>
-              <div className="text-sm text-slate-700">{recommendations.outdoorActivities.bestHours}</div>
-            </div>
-            
-            {recommendations.outdoorActivities.avoid.length > 0 && (
-              <div>
-                <div className="text-xs text-slate-500 mb-1">Activities to Avoid</div>
-                <div className="text-sm text-slate-700">{recommendations.outdoorActivities.avoid.join(', ')}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const getUvRiskLevel = (uv: number) => {
   if (uv <= 2) return { risk: "Low", color: "text-green-600" };
   if (uv <= 5) return { risk: "Moderate", color: "text-yellow-600" };
@@ -341,6 +284,7 @@ export default function MapPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [mapZoom, setMapZoom] = useState(3)
   const [showHeatmap, setShowHeatmap] = useState(false)
+  const [streetViewPanorama, setStreetViewPanorama] = useState<google.maps.StreetViewPanorama | null>(null);
 
   const fetchLocationData = useCallback(async (lat: number, lng: number) => {
     setIsLoading(true)
@@ -552,18 +496,27 @@ export default function MapPage() {
     }
   }, [isLoaded, currentLocation, fetchLocationData, mapZoom])
 
-  // Memoize street view component to prevent unnecessary re-renders
-  const streetViewComponent = useMemo(() => {
-    if (!showStreetView) return null;
-    return (
-      <StreetViewPanorama
-        options={{
-          ...streetViewOptions,
-          position: currentLocation,
-        }}
-      />
-    );
-  }, [showStreetView, currentLocation]);
+  // Update map options when street view is toggled
+  useEffect(() => {
+    if (mapRef.current && isLoaded) {
+      if (showStreetView) {
+        const panorama = new google.maps.StreetViewPanorama(
+          mapRef.current.getDiv(),
+          {
+            ...streetViewOptions,
+            position: currentLocation,
+            visible: true
+          }
+        );
+        mapRef.current.setStreetView(panorama);
+        setStreetViewPanorama(panorama);
+      } else if (streetViewPanorama) {
+        streetViewPanorama.setVisible(false);
+        mapRef.current.setStreetView(null);
+        setStreetViewPanorama(null);
+      }
+    }
+  }, [showStreetView, currentLocation, isLoaded]);
 
   const getAqiColor = (aqi: number) => {
     if (aqi <= 50) return 'text-green-500'  // Good (0-50) - Green
@@ -808,33 +761,33 @@ export default function MapPage() {
                   {locationData.uvData ? (
                     <div className="space-y-1">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-slate-600">Current</span>
+                        <span className="text-slate-500 text-xs">Current</span>
                         <div className="flex items-center gap-1">
-                          <span className={`text-sm font-medium ${getUvRiskLevel(locationData.uvData.uv).color}`}>
+                          <span className={`text-xs ${getUvRiskLevel(locationData.uvData.uv).color}`}>
                             {locationData.uvData.uv.toFixed(1)}
                           </span>
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-slate-400">
                             ({getUvRiskLevel(locationData.uvData.uv).risk})
                           </span>
                         </div>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-slate-600">Max Today</span>
+                        <span className="text-slate-500 text-xs">Max Today</span>
                         <div className="flex items-center gap-1">
-                          <span className={`text-sm font-medium ${getUvRiskLevel(locationData.uvData.uvMax).color}`}>
+                          <span className={`text-xs ${getUvRiskLevel(locationData.uvData.uvMax).color}`}>
                             {locationData.uvData.uvMax.toFixed(1)}
                           </span>
                         </div>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-slate-600">Safe Exposure</span>
-                        <span className="text-sm text-slate-700">
+                        <span className="text-slate-500 text-xs">Safe Exposure</span>
+                        <span className="text-xs text-slate-700">
                           {Math.round(locationData.uvData.safeExposureMinutes)} min
                         </span>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-sm text-slate-500">No UV data available</div>
+                    <div className="text-xs text-slate-500">No UV data available</div>
                   )}
                 </div>
               </div>
@@ -952,9 +905,7 @@ export default function MapPage() {
             setCurrentLocation({ lat: e.latLng.lat(), lng: e.latLng.lng() })
           }
         }}
-      >
-        {streetViewComponent}
-      </GoogleMap>
+      />
 
       <div className="absolute bottom-4 right-4 z-10 flex gap-2">
         <button
