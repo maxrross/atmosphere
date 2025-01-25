@@ -102,7 +102,10 @@ For each timeframe (1 hour, 12 hours, 24 hours, 48 hours, and 96 hours), provide
 Format the response with:
 - hours: number (1, 12, 24, 48, or 96)
 - radius: number (realistic spread distance in kilometers)
-- impact: string (ONE clear sentence about current fire state)`;
+- impact: string (ONE clear sentence about current fire state)
+
+Also I need you to analyze the area and think about what would happen if like you know wind starts blowing out the fire or there's fire efforts. So it is possible for the polygon to start getting smaller, it all just depends on you know the area and you should be talking about that. And if it is getting smaller, you need to make the polygon smaller. 
+`;
 
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
