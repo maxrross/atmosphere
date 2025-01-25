@@ -7,6 +7,7 @@ import { format, addYears } from "date-fns";
 import { SearchBar } from "./components/SearchBar";
 import { MapControls } from "./components/MapControls";
 import { AirQualityPanel } from "./components/AirQualityPanel";
+import { FireConditionsPanel } from "./components/FireConditionsPanel";
 import {
   libraries,
   containerStyle,
@@ -15,7 +16,7 @@ import {
   streetViewOptions,
 } from "./constants";
 import { getHealthRecommendations, getAqiLevel, getSafeExposureMinutes } from "./utils";
-import type { LocationData, PredictionData } from "./types";
+import type { LocationData, PredictionData, FireConditionsData } from "./types";
 
 export default function MapPage() {
   const { isLoaded } = useLoadScript({
@@ -39,6 +40,22 @@ export default function MapPage() {
   );
   const [specificPrediction, setSpecificPrediction] =
     useState<PredictionData | null>(null);
+  const [fireData, setFireData] = useState<FireConditionsData>({
+    riskLevel: "Low",
+    weather: {
+      windSpeed: 0,
+      windDirection: "N",
+      temperature: 0,
+      humidity: 0,
+    },
+    vegetation: {
+      moistureContent: 0,
+      density: "Low",
+      type: "Unknown",
+    },
+    warnings: [],
+  });
+  const [isFireDataLoading, setIsFireDataLoading] = useState(false);
 
   const timeRanges = [5, 10, 15, 20]; // Years to predict
 
@@ -183,6 +200,61 @@ export default function MapPage() {
     [selectedDate]
   );
 
+  const fetchFireData = useCallback(async (lat: number, lng: number) => {
+    setIsFireDataLoading(true);
+    // try {
+    //   const response = await fetch("/api/fire-conditions", {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //     },
+    //     body: JSON.stringify({ lat, lng }),
+    //   });
+
+    //   if (!response.ok) {
+    //     throw new Error(`Fire conditions API error: ${response.status}`);
+    //   }
+
+    //   const data = await response.json();
+    //   setFireData(data);
+    // } catch (error) {
+    //   console.error("Error fetching fire data:", error);
+    //   // Set default values in case of error
+    //   setFireData({
+    //     riskLevel: "Low",
+    //     weather: {
+    //       windSpeed: 0,
+    //       windDirection: "N",
+    //       temperature: 0,
+    //       humidity: 0,
+    //     },
+    //     vegetation: {
+    //       moistureContent: 0,
+    //       density: "Low",
+    //       type: "Unknown",
+    //     },
+    //     warnings: [],
+    //   });
+    // }
+    // setIsFireDataLoading(false);
+
+    setFireData({
+      riskLevel: "Low",
+      weather: {
+        windSpeed: 0,
+        windDirection: "N",
+        temperature: 0,
+        humidity: 0,
+      },
+      vegetation: {
+        moistureContent: 0,
+        density: "Low",
+        type: "Unknown",
+      },
+      warnings: [],
+    });
+  }, []);
+
   const handlePlaceSelect = useCallback((lat: number, lng: number) => {
     if (mapRef.current) {
       mapRef.current.setZoom(14);
@@ -247,10 +319,18 @@ export default function MapPage() {
       ) {
         fetchLocationData(currentLocation.lat, currentLocation.lng);
         fetchPredictions(currentLocation.lat, currentLocation.lng);
+        fetchFireData(currentLocation.lat, currentLocation.lng);
         mapRef.current?.set("lastFetch", { location, time: currentTime });
       }
     }
-  }, [isLoaded, currentLocation, fetchLocationData, fetchPredictions, mapZoom]);
+  }, [
+    isLoaded,
+    currentLocation,
+    fetchLocationData,
+    fetchPredictions,
+    fetchFireData,
+    mapZoom,
+  ]);
 
   useEffect(() => {
     if (mapRef.current && isLoaded) {
@@ -308,6 +388,12 @@ export default function MapPage() {
             );
           }
         }}
+      />
+
+      <FireConditionsPanel
+        mapZoom={mapZoom}
+        isLoading={isFireDataLoading}
+        fireData={fireData}
       />
 
       <GoogleMap
