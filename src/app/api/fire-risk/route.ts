@@ -22,7 +22,8 @@ const structuredSchema = {
     },
     explanation: {
       type: SchemaType.STRING,
-      description: "Brief explanation of the risk assessment",
+      description:
+        "Brief explanation of the risk assessment in 2-3 concise sentences",
       nullable: false,
     },
   },
@@ -61,7 +62,7 @@ Consider factors like:
 - Vegetation
 - Urban proximity
 
-Provide a risk score from 1–100 (where 100 is highest risk) and a brief explanation.`;
+Provide a risk score from 1–100 (where 100 is highest risk) and a brief explanation in 2-3 concise sentences.`;
 
     //
     // Send the prompt to Gemini, which will respond with valid JSON

@@ -156,11 +156,7 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
             <div className="relative flex flex-col items-center">
               {/* Container for the half-circle gauge (170 wide, 85 tall) */}
               <div className="relative w-[170px] h-[85px] overflow-hidden">
-                <svg
-                  width="170"
-                  height="170" // full circle size, though we only show half
-                  className="absolute top-0 left-0"
-                >
+                <svg width="170" height="170" className="absolute top-0 left-0">
                   {/* Background Circle (half) */}
                   <circle
                     cx="85"
@@ -170,8 +166,8 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
                     stroke="#e5e7eb"
                     strokeWidth="12"
                     strokeDasharray={circumference}
-                    strokeDashoffset={circumference / 2}
-                    transform="rotate(180, 85, 85)"
+                    strokeDashoffset={0}
+                    transform="rotate(-90, 85, 85)"
                   />
                   {/* Colored Progress Arc */}
                   <circle
@@ -184,7 +180,7 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
                     strokeDasharray={circumference}
                     strokeDashoffset={strokeDashoffset}
                     strokeLinecap="round"
-                    transform="rotate(180, 85, 85)"
+                    transform="rotate(-90, 85, 85)"
                     className="transition-all duration-1000 ease-in-out"
                   />
                 </svg>
@@ -210,15 +206,6 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
                     {getRiskLabel(fireData.riskScore)}
                   </div>
                 </div>
-              </div>
-
-              {/* Scale Labels */}
-              <div className="w-full flex justify-between px-2 mt-2 text-xs text-slate-500">
-                <span>0</span>
-                <span>25</span>
-                <span>50</span>
-                <span>75</span>
-                <span>100</span>
               </div>
             </div>
 
