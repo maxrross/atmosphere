@@ -1,25 +1,648 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
-import { GoogleMap, LoadScript, StreetViewPanorama } from "@react-google-maps/api"
-import { Search, MapPin, Wind, Calendar, ChevronRight } from "lucide-react"
+import { useState, useRef, useCallback, useMemo, useEffect } from "react"
+import { GoogleMap, useLoadScript, StreetViewPanorama, Autocomplete } from "@react-google-maps/api"
+import { Search, MapPin, Wind, Calendar, ChevronRight, Droplets, Sun, Mountain, Thermometer } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
+// Move libraries outside component
+const libraries: ("places" | "geocoding")[] = ["places", "geocoding"]
+
+interface LocationData {
+  airQuality?: {
+    aqi: number;
+    mainPollutant: string;
+    level: string;
+    pollutants: {
+      [key: string]: {
+        concentration: number;
+        aqi: number;
+        additionalInfo?: {
+          sources: string;
+          effects: string;
+        };
+      };
+    };
+  };
+  regionCode?: string;
+  history?: Array<{
+    label: string;
+    dateTime: string;
+    indexes: Array<{
+      code: string;
+      aqi: number;
+      category: string;
+    }>;
+    preferredIndex?: {
+      aqi: number;
+      category: string;
+      dominantPollutant: string;
+    };
+  }>;
+  pollen?: {
+    grass: {
+      index: number;
+      risk: string;
+    };
+    tree: {
+      index: number;
+      risk: string;
+    };
+    weed: {
+      index: number;
+      risk: string;
+    };
+  };
+  elevation?: number;
+  address?: string;
+}
 
 const containerStyle = {
   width: "100%",
   height: "100vh",
 }
 
-const center = {
-  lat: 40.7128,
-  lng: -74.0060, // New York by default
+// Start with a centered view of the globe
+const defaultLocation = {
+  lat: 20,
+  lng: 0,
+}
+
+type PollutantCode = 'pm25' | 'pm10' | 'no2' | 'so2' | 'o3' | 'co';
+
+interface PollutantInfo {
+  name: string;
+  fullName: string;
+  sources: string;
+  effects: string;
+}
+
+const pollutantInfo: Record<PollutantCode, PollutantInfo> = {
+  'pm25': {
+    name: 'PM2.5',
+    fullName: 'Fine particulate matter (<2.5µm)',
+    sources: 'Main sources are combustion processes (e.g. power plants, indoor heating, car exhausts, wildfires), mechanical processes (e.g. construction, mineral dust) and biological particles (e.g. bacteria, viruses).',
+    effects: 'Fine particles can penetrate into the lungs and bloodstream. Short term exposure can cause irritation of the airways, coughing and aggravation of heart and lung diseases, expressed as difficulty breathing, heart attacks and even premature death.'
+  },
+  'pm10': {
+    name: 'PM10',
+    fullName: 'Inhalable particulate matter (<10µm)',
+    sources: 'Main sources are combustion processes (e.g. indoor heating, wildfires), mechanical processes (e.g. construction, mineral dust, agriculture) and biological particles (e.g. pollen, bacteria, mold).',
+    effects: 'Inhalable particles can penetrate into the lungs. Short term exposure can cause irritation of the airways, coughing, and aggravation of heart and lung diseases, expressed as difficulty breathing, heart attacks and even premature death.'
+  },
+  'no2': {
+    name: 'NO₂',
+    fullName: 'Nitrogen dioxide',
+    sources: 'Main sources are fuel burning processes, such as those used in industry and transportation.',
+    effects: 'Exposure may cause increased bronchial reactivity in patients with asthma, lung function decline in patients with Chronic Obstructive Pulmonary Disease (COPD), and increased risk of respiratory infections, especially in young children.'
+  },
+  'so2': {
+    name: 'SO₂',
+    fullName: 'Sulfur dioxide',
+    sources: 'Main sources are burning processes of sulfur-containing fuel in industry, transportation and power plants.',
+    effects: 'Exposure causes irritation of the respiratory tract, coughing and generates local inflammatory reactions. These in turn, may cause aggravation of lung diseases, even with short term exposure.'
+  },
+  'o3': {
+    name: 'O₃',
+    fullName: 'Ozone',
+    sources: 'Ozone is created in a chemical reaction between atmospheric oxygen, nitrogen oxides, carbon monoxide and organic compounds, in the presence of sunlight.',
+    effects: 'Ozone can irritate the airways and cause coughing, a burning sensation, wheezing and shortness of breath. Additionally, ozone is one of the major components of photochemical smog.'
+  },
+  'co': {
+    name: 'CO',
+    fullName: 'Carbon monoxide',
+    sources: 'Typically originates from incomplete combustion of carbon fuels, such as that which occurs in car engines and power plants.',
+    effects: 'When inhaled, carbon monoxide can prevent the blood from carrying oxygen. Exposure may cause dizziness, nausea and headaches. Exposure to extreme concentrations can lead to loss of consciousness.'
+  }
+}
+
+const getPollutantName = (code: string): string => {
+  return pollutantInfo[code.toLowerCase() as PollutantCode]?.name || code
+}
+
+const mapOptions = {
+  disableDefaultUI: true,
+  minZoom: 2,
+  maxZoom: 20,
+  zoom: 3,
+  mapTypeId: "hybrid",
+  tilt: 45,
+  restriction: {
+    latLngBounds: {
+      north: 85,
+      south: -85,
+      west: -180,
+      east: 180
+    },
+    strictBounds: true
+  },
+  styles: [
+    {
+      featureType: "all",
+      elementType: "labels",
+      stylers: [{ visibility: "off" }]
+    },
+    {
+      featureType: "administrative.country",
+      elementType: "geometry.stroke",
+      stylers: [{ visibility: "on" }, { color: "#ffffff50" }]
+    },
+    {
+      featureType: "water",
+      elementType: "geometry.fill",
+      stylers: [{ color: "#1a365d" }]
+    },
+    {
+      featureType: "landscape",
+      elementType: "geometry.fill",
+      stylers: [{ color: "#1e293b" }]
+    }
+  ]
+}
+
+// Optimize street view settings
+const streetViewOptions = {
+  disableDefaultUI: true,
+  enableCloseButton: false,
+  addressControl: false,
+  showRoadLabels: false,
+  motionTracking: false,
+  motionTrackingControl: false,
+  linksControl: true,
+  panControl: true,
+  zoomControl: true,
+  fullscreenControl: false,
 }
 
 export default function MapPage() {
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+    libraries,
+  })
+
   const [showStreetView, setShowStreetView] = useState(false)
   const [searchValue, setSearchValue] = useState("")
-  const [airQuality, setAirQuality] = useState<any>(null)
-  const [predictions, setPredictions] = useState<any>(null)
-  const mapRef = useRef(null)
+  const mapRef = useRef<google.maps.Map | null>(null)
+  const searchBoxRef = useRef<google.maps.places.Autocomplete | null>(null)
+  const [currentLocation, setCurrentLocation] = useState(defaultLocation)
+  const [locationData, setLocationData] = useState<LocationData>({})
+  const [isLoading, setIsLoading] = useState(false)
+  const [mapZoom, setMapZoom] = useState(3)
+  const [showHeatmap, setShowHeatmap] = useState(false)
+
+  const fetchLocationData = useCallback(async (lat: number, lng: number) => {
+    setIsLoading(true)
+    try {
+      // Geocoding API request
+      const geocoder = new google.maps.Geocoder()
+      const geocodeResult = await geocoder.geocode({ location: { lat, lng } })
+      const address = geocodeResult.results[0]?.formatted_address
+
+      // Elevation API request
+      const elevator = new google.maps.ElevationService()
+      const elevationResult = await elevator.getElevationForLocations({
+        locations: [{ lat, lng }],
+      })
+      const elevation = elevationResult.results[0]?.elevation
+
+      // Fetch air quality and pollen data from our API route
+      const response = await fetch('/api/location-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ lat, lng, hours: 120 }), // Fixed at 5 days of history
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      const { airQualityData, historyData, pollenData } = await response.json()
+      
+      // Only process data if it's available and doesn't contain errors
+      if (airQualityData && !airQualityData.error) {
+        // Function to determine which AQI to use based on region
+        const getPreferredAqiIndex = (indexes: any[], regionCode: string) => {
+          if (regionCode === 'us') {
+            return indexes?.find((idx: { code: string }) => idx.code === 'usa_epa') || indexes?.[0];
+          }
+          return indexes?.find((idx: { code: string }) => idx.code === 'uaqi') || indexes?.[0];
+        }
+
+        // Get the appropriate AQI index based on region
+        const preferredIndex = getPreferredAqiIndex(airQualityData.indexes, airQualityData.regionCode);
+
+        // Process air quality data
+        const pollutants: { [key: string]: { concentration: number; aqi: number; additionalInfo?: { sources: string; effects: string } } } = {}
+        airQualityData?.pollutants?.forEach((pollutant: any) => {
+          pollutants[pollutant.code] = {
+            concentration: pollutant.concentration?.value || 0,
+            aqi: 0,
+            additionalInfo: pollutantInfo[pollutant.code.toLowerCase() as PollutantCode]
+          }
+        })
+
+        // Process history data if available
+        const processedHistory = historyData && !historyData.error ? 
+          historyData.map((entry: any) => ({
+            ...entry,
+            preferredIndex: getPreferredAqiIndex(entry.indexes, airQualityData.regionCode)
+          })) : [];
+
+        setLocationData({
+          airQuality: {
+            aqi: preferredIndex?.aqi || 0,
+            mainPollutant: preferredIndex?.dominantPollutant || "Unknown",
+            level: getAqiLevel(preferredIndex?.aqi || 0),
+            pollutants,
+          },
+          regionCode: airQualityData.regionCode,
+          history: processedHistory,
+          pollen: pollenData && !pollenData.error ? {
+            grass: {
+              index: pollenData.grassIndex,
+              risk: getRiskLevel(pollenData.grassIndex),
+            },
+            tree: {
+              index: pollenData.treeIndex,
+              risk: getRiskLevel(pollenData.treeIndex),
+            },
+            weed: {
+              index: pollenData.weedIndex,
+              risk: getRiskLevel(pollenData.weedIndex),
+            },
+          } : undefined,
+          elevation,
+          address,
+        })
+      } else {
+        // Clear the data if we got an error
+        setLocationData({
+          elevation,
+          address,
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching location data:", error)
+      // Set some default data in case of error
+      setLocationData({
+        airQuality: {
+          aqi: 50,
+          mainPollutant: "PM2.5",
+          level: "Moderate",
+          pollutants: {
+            "PM2.5": { concentration: 15, aqi: 50 },
+            "PM10": { concentration: 25, aqi: 40 },
+            "O3": { concentration: 45, aqi: 60 },
+            "NO2": { concentration: 30, aqi: 45 },
+          },
+        },
+        pollen: {
+          grass: { index: 2, risk: "Low" },
+          tree: { index: 1, risk: "Low" },
+          weed: { index: 3, risk: "Moderate" },
+        },
+        elevation: 0,
+        address: "Location data unavailable",
+      })
+    }
+    setIsLoading(false)
+  }, [])
+
+  const handlePlaceSelect = useCallback(() => {
+    const place = searchBoxRef.current?.getPlace()
+    if (place?.geometry?.location) {
+      const lat = place.geometry.location.lat()
+      const lng = place.geometry.location.lng()
+      
+      // Always zoom in to the selected location
+      if (mapRef.current) {
+        mapRef.current.setZoom(14) // Zoom to street level
+        mapRef.current.panTo({ lat, lng })
+      }
+      
+      setCurrentLocation({ lat, lng })
+    }
+  }, [])
+
+  // Memoize the heatmap layer to prevent unnecessary re-renders
+  const heatmapLayer = useMemo(() => {
+    if (!showHeatmap || !isLoaded) return null
+    return new google.maps.ImageMapType({
+      getTileUrl: (coord, zoom) => {
+        return `https://airquality.googleapis.com/v1/mapTypes/US_AQI/heatmapTiles/${zoom}/${coord.x}/${coord.y}?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+      },
+      tileSize: new google.maps.Size(256, 256),
+      maxZoom: 16,
+      minZoom: 0,
+      opacity: 0.6,
+      name: 'Air Quality'
+    })
+  }, [showHeatmap, isLoaded])
+
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map
+    
+    map.addListener("zoom_changed", () => {
+      setMapZoom(map.getZoom()!)
+    })
+
+    // Add the heatmap layer
+    if (heatmapLayer) {
+      // Remove any existing heatmap layers first
+      map.overlayMapTypes.clear()
+      map.overlayMapTypes.push(heatmapLayer)
+    }
+
+    map.setTilt(45)
+  }, [heatmapLayer])
+
+  // Update heatmap when toggled
+  useEffect(() => {
+    if (mapRef.current && isLoaded) {
+      if (showHeatmap && heatmapLayer) {
+        mapRef.current.overlayMapTypes.clear()
+        mapRef.current.overlayMapTypes.push(heatmapLayer)
+      } else {
+        mapRef.current.overlayMapTypes.clear()
+      }
+    }
+  }, [showHeatmap, heatmapLayer, isLoaded])
+
+  // Only fetch location data when zoomed in enough and location has changed
+  useEffect(() => {
+    if (isLoaded && currentLocation && mapZoom >= 10) {
+      const lastFetch = mapRef.current?.get('lastFetch')
+      const currentTime = Date.now()
+      const location = `${currentLocation.lat},${currentLocation.lng}`
+      
+      // Only fetch if location has changed or it's been more than 5 minutes
+      if (!lastFetch || lastFetch.location !== location || (currentTime - lastFetch.time) > 300000) {
+        fetchLocationData(currentLocation.lat, currentLocation.lng)
+        mapRef.current?.set('lastFetch', { location, time: currentTime })
+      }
+    }
+  }, [isLoaded, currentLocation, fetchLocationData, mapZoom])
+
+  // Memoize street view component to prevent unnecessary re-renders
+  const streetViewComponent = useMemo(() => {
+    if (!showStreetView) return null;
+    return (
+      <StreetViewPanorama
+        options={{
+          ...streetViewOptions,
+          position: currentLocation,
+        }}
+      />
+    );
+  }, [showStreetView, currentLocation]);
+
+  const getAqiColor = (aqi: number) => {
+    if (aqi <= 50) return 'text-green-500'  // Good (0-50) - Green
+    if (aqi <= 100) return 'text-yellow-500'  // Moderate (51-100) - Yellow
+    if (aqi <= 150) return 'text-orange-500'  // Unhealthy for Sensitive Groups (101-150) - Orange
+    if (aqi <= 200) return 'text-red-500'  // Unhealthy (151-200) - Red
+    if (aqi <= 300) return 'text-purple-600'  // Very Unhealthy (201-300) - Purple
+    return 'text-rose-900'  // Hazardous (301+) - Maroon
+  }
+
+  const getAqiLevel = (aqi: number) => {
+    if (aqi <= 50) return "Good"
+    if (aqi <= 100) return "Moderate"
+    if (aqi <= 150) return "Unhealthy for Sensitive Groups"
+    if (aqi <= 200) return "Unhealthy"
+    if (aqi <= 300) return "Very Unhealthy"
+    return "Hazardous"
+  }
+
+  const getRiskLevel = (index: number) => {
+    if (index <= 1) return "Low"
+    if (index <= 3) return "Moderate"
+    if (index <= 5) return "High"
+    return "Very High"
+  }
+
+  const AirQualityPanel = useMemo(() => (
+    <div className={`absolute top-40 left-4 z-10 w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200/50 p-4 transition-opacity duration-300 ${mapZoom < 10 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      <div className="">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-black bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 bg-clip-text text-transparent">
+            Location Insights
+          </h2>
+          <MapPin className="text-slate-400" size={20} />
+        </div>
+        
+        {isLoading ? (
+          <div className="space-y-3">
+            <div className="h-6 bg-slate-200/50 animate-pulse rounded"></div>
+            
+            <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2 w-1/2">
+                  <div className="h-5 bg-slate-200/50 animate-pulse rounded"></div>
+                  <div className="h-4 bg-slate-200/50 animate-pulse rounded w-3/4"></div>
+                </div>
+                <div className="h-8 w-12 bg-slate-200/50 animate-pulse rounded"></div>
+              </div>
+              <div className="pt-3 mt-3 border-t border-slate-200/50 space-y-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="flex justify-between items-center">
+                    <div className="h-4 bg-slate-200/50 animate-pulse rounded w-20"></div>
+                    <div className="h-4 bg-slate-200/50 animate-pulse rounded w-16"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md space-y-2">
+                <div className="h-4 bg-slate-200/50 animate-pulse rounded w-16"></div>
+                <div className="space-y-1.5">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex justify-between">
+                      <div className="h-3 bg-slate-200/50 animate-pulse rounded w-12"></div>
+                      <div className="h-3 bg-slate-200/50 animate-pulse rounded w-14"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md space-y-2">
+                <div className="h-4 bg-slate-200/50 animate-pulse rounded w-16"></div>
+                <div className="h-4 bg-slate-200/50 animate-pulse rounded w-12"></div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+          <div className="text-sm text-slate-600 pb-2 pt-1">{locationData.address}</div>
+
+          <div className="space-y-4">
+            
+            <div className="space-y-3 mt-2">
+              <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Wind className="text-blue-500" size={20} />
+                      <span className="text-base font-medium text-slate-800">Air Quality</span>
+                    </div>
+                    <div className="text-sm text-slate-700">
+                      Main Pollutant: <span className="font-medium">{getPollutantName(locationData.airQuality?.mainPollutant || "Unknown")}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className={`text-2xl font-bold ${getAqiColor(locationData.airQuality?.aqi || 0)}`}>
+                      {locationData.airQuality?.aqi || "N/A"}
+                    </span>
+                    <span className="text-sm text-slate-600">
+                      {locationData.airQuality?.level || "Unknown"}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2 pt-3 mt-3 border-t border-slate-200/50">
+                  {Object.entries(locationData.airQuality?.pollutants || {}).map(([pollutant, data]) => (
+                    <TooltipProvider key={pollutant}>
+                      <Tooltip delayDuration={100}>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center justify-between hover:bg-slate-100/50 rounded px-2 py-1.5 transition-colors select-none">
+                            <div className="text-sm text-slate-700">{getPollutantName(pollutant)}</div>
+                            <div className="text-sm text-slate-600">
+                              {data.concentration.toFixed(1)} {data.concentration > 100 ? 'ppb' : 'μg/m³'}
+                            </div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent 
+                          side="left" 
+                          sideOffset={20}
+                          className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200/50 p-3 text-xs space-y-2 w-80"
+                        >
+                          <div className="font-medium text-slate-900 mb-1">
+                            {pollutantInfo[pollutant.toLowerCase() as PollutantCode]?.fullName}
+                          </div>
+                          <div>
+                            <div className="font-medium text-slate-900 mb-1">Sources:</div>
+                            <div className="text-slate-600">{pollutantInfo[pollutant.toLowerCase() as PollutantCode]?.sources}</div>
+                          </div>
+                          <div>
+                            <div className="font-medium text-slate-900 mb-1">Effects:</div>
+                            <div className="text-slate-600">{pollutantInfo[pollutant.toLowerCase() as PollutantCode]?.effects}</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ))}
+                </div>
+              </div>
+
+              {locationData.history && locationData.history.length > 0 && 
+               locationData.history.some(entry => {
+                 // For US locations, require US EPA data
+                 if (locationData.regionCode === 'us') {
+                   return entry.indexes?.some((idx: { code: string }) => idx.code === 'usa_epa');
+                 }
+                 // For non-US locations, show if we have UAQI data
+                 return entry.indexes?.some((idx: { code: string }) => idx.code === 'uaqi');
+               }) && (
+                <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Calendar className="text-blue-500" size={18} />
+                    <span className="text-sm font-medium bg-gradient-to-t from-slate-600 to-slate-900 bg-clip-text text-transparent">Historical AQI</span>
+                  </div>
+                  <div className="space-y-2">
+                    {locationData.history
+                      .filter(entry => {
+                        // For US locations, only show entries with US EPA data
+                        if (locationData.regionCode === 'us') {
+                          return entry.indexes?.some((idx: { code: string }) => idx.code === 'usa_epa');
+                        }
+                        // For non-US locations, show entries with UAQI data
+                        return entry.indexes?.some((idx: { code: string }) => idx.code === 'uaqi');
+                      })
+                      .map((entry) => {
+                        const aqi = locationData.regionCode === 'us' 
+                          ? entry.indexes?.find((idx: { code: string }) => idx.code === 'usa_epa')?.aqi || 0
+                          : entry.indexes?.find((idx: { code: string }) => idx.code === 'uaqi')?.aqi || 0;
+                        
+                        return (
+                          <div key={`${entry.label}-${entry.dateTime}`} className="flex items-center justify-between text-sm">
+                            <span className="text-slate-600">{entry.label}</span>
+                            <div className="flex items-center gap-1">
+                              <span className={`font-medium ${getAqiColor(aqi)}`}>
+                                {aqi}
+                              </span>
+                              <span className="text-xs text-slate-400">AQI</span>
+                            </div>
+                          </div>
+                        );
+                    })}
+                  </div>
+                  
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Droplets className="text-blue-500" size={18} />
+                    <span className="text-sm font-medium bg-gradient-to-t from-slate-600 to-slate-900 bg-clip-text text-transparent">Pollen</span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-500">Grass</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-700">{locationData.pollen?.grass.risk}</span>
+                        <span className="text-xs text-slate-400">({locationData.pollen?.grass.index})</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-500">Tree</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-700">{locationData.pollen?.tree.risk}</span>
+                        <span className="text-xs text-slate-400">({locationData.pollen?.tree.index})</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-500">Weed</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-700">{locationData.pollen?.weed.risk}</span>
+                        <span className="text-xs text-slate-400">({locationData.pollen?.weed.index})</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Mountain className="text-blue-500" size={18} />
+                    <span className="text-sm font-medium bg-gradient-to-t from-slate-600 to-slate-900 bg-clip-text text-transparent">Elevation</span>
+                  </div>
+                  <div className="text-sm text-slate-700">
+                    {locationData.elevation ? `${Math.round(locationData.elevation)}m` : "N/A"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </>
+        )}
+      </div>
+    </div>
+  ), [locationData, isLoading, mapZoom])
+
+  if (!isLoaded) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-lg font-medium text-slate-600">Loading map...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="relative h-screen">
@@ -27,98 +650,69 @@ export default function MapPage() {
       <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-10 w-full max-w-2xl px-4">
         <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200/50">
           <div className="relative">
-            <input
+            {isLoaded && (
+              <Autocomplete
+                onLoad={(autocomplete) => {
+                  searchBoxRef.current = autocomplete
+                }}
+                onPlaceChanged={handlePlaceSelect}
+                options={{
+                  fields: ["formatted_address", "geometry", "name"],
+                  strictBounds: false,
+                  types: ["geocode", "establishment"],
+                }}
+              >
+                <input
               type="text"
-              placeholder="Search by address, coordinates, or zip code..."
-              className="w-full px-4 py-3 pl-12 rounded-lg bg-transparent focus:outline-none focus:ring-2 focus:ring-slate-900/20"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
+                  placeholder="Search for any location..."
+                  className="w-full px-4 py-3 pl-12 rounded-lg bg-transparent focus:outline-none focus:ring-2 focus:ring-slate-900/20"
             />
+              </Autocomplete>
+            )}
             <Search className="absolute left-4 top-3.5 text-slate-400" size={20} />
           </div>
         </div>
       </div>
 
-      {/* Air Quality Panel */}
-      <div className="absolute top-40 left-4 z-10 w-80 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200/50 p-4">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-black bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 bg-clip-text text-transparent">
-              Air Quality Insights
-            </h2>
-            <MapPin className="text-slate-400" size={20} />
-          </div>
-          
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
-              <div className="flex items-center gap-2">
-                <Wind className="text-blue-500" size={18} />
-                <span className="text-sm font-medium bg-gradient-to-t from-slate-600 to-slate-900 bg-clip-text text-transparent">Current AQI</span>
-              </div>
-              <span className="text-lg font-black bg-gradient-to-r from-slate-800 to-slate-900 bg-clip-text text-transparent">45</span>
-            </div>
+      {AirQualityPanel}
 
-            <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar className="text-blue-500" size={18} />
-                <span className="text-sm font-medium bg-gradient-to-t from-slate-600 to-slate-900 bg-clip-text text-transparent">AI Prediction</span>
-              </div>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                Based on current trends and historical data, air quality is expected to improve over the next 24 hours due to incoming weather patterns.
-              </p>
-            </div>
-          </div>
-
-          <div className="border-t border-slate-200/50 pt-4">
-            <h3 className="text-sm font-bold bg-gradient-to-r from-slate-800 to-slate-900 bg-clip-text text-transparent mb-2">Pollutant Levels</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {["PM2.5", "PM10", "O3", "NO2"].map((pollutant) => (
-                <div key={pollutant} className="p-2 bg-slate-50/80 backdrop-blur-sm rounded-md">
-                  <div className="text-xs text-slate-500">{pollutant}</div>
-                  <div className="text-sm font-medium bg-gradient-to-t from-slate-600 to-slate-900 bg-clip-text text-transparent">Good</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Map Container */}
-      <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
-        <GoogleMap
-          mapContainerStyle={containerStyle}
-          center={center}
-          zoom={12}
-          ref={mapRef}
-          options={{
-            styles: [
-              {
-                featureType: "all",
-                elementType: "all",
-                stylers: [{ saturation: -50 }]
-              }
-            ]
-          }}
-        >
-          {showStreetView && (
-            <StreetViewPanorama
-              position={center}
-              visible={true}
-            />
-          )}
-        </GoogleMap>
-      </LoadScript>
-
-      {/* Street View Toggle */}
-      <button
-        onClick={() => setShowStreetView(!showStreetView)}
-        className="absolute bottom-4 right-4 z-10 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-md shadow-lg border border-slate-200/50 text-sm font-medium hover:bg-slate-50 transition-colors group"
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={currentLocation}
+        zoom={3}
+        onLoad={onMapLoad}
+        options={mapOptions}
+        onClick={(e) => {
+          if (e.latLng && mapZoom >= 10) {
+            setCurrentLocation({ lat: e.latLng.lat(), lng: e.latLng.lng() })
+          }
+        }}
       >
-        <span className="bg-gradient-to-r from-slate-800 to-slate-900 bg-clip-text text-transparent inline-flex items-center gap-1">
-          {showStreetView ? "Exit Street View" : "Enter Street View"}
-          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-        </span>
-      </button>
+        {streetViewComponent}
+            </GoogleMap>
+
+      <div className="absolute bottom-4 right-4 z-10 flex gap-2">
+        <button
+          onClick={() => setShowHeatmap(!showHeatmap)}
+          className="px-4 py-2 bg-white/90 backdrop-blur-sm rounded-md shadow-lg border border-slate-200/50 text-sm font-medium hover:bg-slate-50 transition-colors group"
+        >
+          <span className="bg-gradient-to-r from-slate-800 to-slate-900 bg-clip-text text-transparent inline-flex items-center gap-1">
+            {showHeatmap ? "Hide Air Quality" : "Show Air Quality"}
+            <Wind className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+          </span>
+        </button>
+        {mapZoom >= 10 && (
+          <button
+            onClick={() => setShowStreetView(!showStreetView)}
+            className="px-4 py-2 bg-white/90 backdrop-blur-sm rounded-md shadow-lg border border-slate-200/50 text-sm font-medium hover:bg-slate-50 transition-colors group"
+          >
+            <span className="bg-gradient-to-r from-slate-800 to-slate-900 bg-clip-text text-transparent inline-flex items-center gap-1">
+              {showStreetView ? "Exit Street View" : "Enter Street View"}
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+            </span>
+          </button>
+        )}
+      </div>
     </div>
   )
 }
