@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useMemo, useEffect } from "react"
-import { GoogleMap, useLoadScript, StreetViewPanorama, Autocomplete } from "@react-google-maps/api"
+import { GoogleMap, useLoadScript, Autocomplete } from "@react-google-maps/api"
 import { Search, MapPin, Wind, Calendar, ChevronRight, Droplets, Mountain, Sun, ChartLine } from "lucide-react"
 import {
   Tooltip,
@@ -19,7 +19,7 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from "recharts";
-import { predict, PredictionResult } from "../lib/prediction";
+import { predict } from "../lib/prediction";
 import { format, addYears } from "date-fns";
 
 // Move libraries outside component
@@ -603,7 +603,7 @@ export default function MapPage() {
     }
   }, [isLoaded, currentLocation, fetchLocationData, fetchPredictions, mapZoom]);
 
-  // Update map options when street view is toggled
+  // Update useEffect with streetViewPanorama dependency
   useEffect(() => {
     if (mapRef.current && isLoaded) {
       if (showStreetView) {
@@ -623,7 +623,7 @@ export default function MapPage() {
         setStreetViewPanorama(null);
       }
     }
-  }, [showStreetView, currentLocation, isLoaded]);
+  }, [showStreetView, currentLocation, isLoaded, streetViewPanorama]);
 
   const getAqiColor = (aqi: number) => {
     if (aqi <= 50) return "text-green-500"; // Good (0-50) - Green
@@ -749,7 +749,9 @@ export default function MapPage() {
   }, [predictionData]);
 
   const AirQualityPanel = useMemo(() => (
-    <div className={`absolute top-24 left-4 z-10 w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200/50 p-4 transition-opacity duration-300 ${mapZoom < 10 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+    <div className={`fixed top-36 left-4 z-20 w-96 max-h-[calc(100vh-10rem)] overflow-y-auto bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200/50 p-4 transition-opacity duration-300 ${
+      mapZoom < 10 ? 'opacity-0 pointer-events-none' : 'opacity-100'
+    } sm:w-[calc(100%-2rem)] sm:left-4 sm:right-4 md:w-96 md:left-4`}>
       <div className="">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-black bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 bg-clip-text text-transparent">
@@ -1223,7 +1225,21 @@ export default function MapPage() {
         </Tabs>
       </div>
     </div>
-  ), [locationData, isLoading, mapZoom, isPredictionLoading, PredictionChart, selectedDate, currentLocation, specificPrediction]);
+  ), [
+    locationData, 
+    isLoading, 
+    mapZoom, 
+    isPredictionLoading, 
+    PredictionChart, 
+    selectedDate, 
+    currentLocation, 
+    specificPrediction,
+    recommendations.generalAdvice,
+    recommendations.outdoorActivities.avoid,
+    recommendations.outdoorActivities.bestHours,
+    recommendations.risk,
+    recommendations.sensitiveGroups
+  ]);
 
   if (!isLoaded) {
     return (
@@ -1236,7 +1252,7 @@ export default function MapPage() {
   return (
     <div className="relative h-screen">
       {/* Search Bar */}
-      <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-10 w-full max-w-2xl px-4">
+      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-30 w-full max-w-2xl px-4">
         <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200/50">
           <div className="relative">
             {isLoaded && (
