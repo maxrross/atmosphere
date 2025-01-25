@@ -403,6 +403,10 @@ export default function MapPage() {
         mapZoom={mapZoom}
         isLoading={isFireDataLoading}
         fireData={fireData}
+        lat={currentLocation.lat}
+        lng={currentLocation.lng}
+        address={locationData.address || ""}
+        map={mapRef.current}
       />
 
       <GoogleMap
