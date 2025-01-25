@@ -202,57 +202,41 @@ export default function MapPage() {
 
   const fetchFireData = useCallback(async (lat: number, lng: number) => {
     setIsFireDataLoading(true);
-    // try {
-    //   const response = await fetch("/api/fire-conditions", {
-    //     method: "POST",
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //     },
-    //     body: JSON.stringify({ lat, lng }),
-    //   });
+    try {
+      const response = await fetch("/api/fire-conditions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ lat, lng }),
+      });
 
-    //   if (!response.ok) {
-    //     throw new Error(`Fire conditions API error: ${response.status}`);
-    //   }
+      if (!response.ok) {
+        throw new Error(`Fire conditions API error: ${response.status}`);
+      }
 
-    //   const data = await response.json();
-    //   setFireData(data);
-    // } catch (error) {
-    //   console.error("Error fetching fire data:", error);
-    //   // Set default values in case of error
-    //   setFireData({
-    //     riskLevel: "Low",
-    //     weather: {
-    //       windSpeed: 0,
-    //       windDirection: "N",
-    //       temperature: 0,
-    //       humidity: 0,
-    //     },
-    //     vegetation: {
-    //       moistureContent: 0,
-    //       density: "Low",
-    //       type: "Unknown",
-    //     },
-    //     warnings: [],
-    //   });
-    // }
-    // setIsFireDataLoading(false);
-
-    setFireData({
-      riskLevel: "Low",
-      weather: {
-        windSpeed: 0,
-        windDirection: "N",
-        temperature: 0,
-        humidity: 0,
-      },
-      vegetation: {
-        moistureContent: 0,
-        density: "Low",
-        type: "Unknown",
-      },
-      warnings: [],
-    });
+      const data = await response.json();
+      setFireData(data);
+    } catch (error) {
+      console.error("Error fetching fire data:", error);
+      // Set default values in case of error
+      setFireData({
+        riskLevel: "Low",
+        weather: {
+          windSpeed: 0,
+          windDirection: "N",
+          temperature: 0,
+          humidity: 0,
+        },
+        vegetation: {
+          moistureContent: 0,
+          density: "Low",
+          type: "Unknown",
+        },
+        warnings: [],
+      });
+    }
+    setIsFireDataLoading(false);
   }, []);
 
   const handlePlaceSelect = useCallback((lat: number, lng: number) => {
