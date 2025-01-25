@@ -50,7 +50,6 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
   const [simulationData, setSimulationData] = useState<SimulationData | null>(
     null
   );
-  const [showSimulation, setShowSimulation] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
 
   // Hide if zoomed out
@@ -75,7 +74,6 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
 
   const handleSimulation = async () => {
     setIsSimulating(true);
-    setShowSimulation(true);
     try {
       console.log("Starting simulation with:", { lat, lng, address });
 
@@ -131,8 +129,12 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
               disabled={isSimulating}
               className="flex items-center gap-1 px-2 py-1 text-sm text-white bg-orange-600 rounded-md hover:bg-orange-700 transition-colors disabled:opacity-50"
             >
-              <PlayCircle size={16} />
-              Simulate
+              {isSimulating ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <PlayCircle size={16} />
+              )}
+              {isSimulating ? "Loading" : "Simulate"}
             </button>
           </div>
         </div>
@@ -162,7 +164,6 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
                     strokeWidth="12"
                     strokeDasharray={circumference}
                     strokeDashoffset={circumference / 2}
-                    // Rotating so the arc appears at the top
                     transform="rotate(180, 85, 85)"
                   />
                   {/* Colored Progress Arc */}
@@ -222,78 +223,11 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
         )}
       </div>
 
-      {/* Simulation Modal */}
-      {showSimulation && (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/50">
-          <div className="relative w-full max-w-2xl max-h-[80vh] overflow-y-auto m-4 p-6 bg-white rounded-lg shadow-xl">
-            <button
-              onClick={() => setShowSimulation(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-            >
-              <X size={20} />
-            </button>
-
-            <h3 className="text-xl font-semibold mb-4">
-              Fire Spread Simulation
-            </h3>
-
-            {isSimulating ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
-                <p className="mt-4 text-gray-600">Generating simulation...</p>
-              </div>
-            ) : simulationData ? (
-              <div className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-2">
-                  {simulationData.timeframes.map((timeframe, index) => (
-                    <div
-                      key={index}
-                      className="p-4 border border-orange-100 rounded-lg bg-orange-50"
-                    >
-                      <h4 className="font-semibold text-orange-800">
-                        {timeframe.hours === 24
-                          ? "1 day"
-                          : timeframe.hours === 48
-                          ? "2 days"
-                          : timeframe.hours === 96
-                          ? "4 days"
-                          : `${timeframe.hours} hours`}
-                      </h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Spread radius: {timeframe.radius}km
-                      </p>
-                      <p className="text-sm text-gray-700 mt-2">
-                        {timeframe.impact}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 p-4 bg-slate-50 rounded-lg">
-                  <h4 className="font-semibold text-gray-800 mb-2">
-                    Analysis Factors
-                  </h4>
-                  <p className="text-sm text-gray-600">
-                    {simulationData.explanation}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-gray-600">
-                Failed to generate simulation. Please try again.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* {showOverlay && simulationData && ( */}
       <FireSpreadOverlay
         map={map}
         center={{ lat, lng }}
         simulationData={simulationData}
       />
-      {/* )} */}
     </>
   );
 };
