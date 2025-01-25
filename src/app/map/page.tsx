@@ -34,6 +34,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { predict, PredictionResult } from "../lib/prediction";
+import { format, addYears } from "date-fns";
 
 // Move libraries outside component
 const libraries: ("places" | "geocoding")[] = ["places", "geocoding"];
@@ -262,6 +263,8 @@ interface PredictionData {
   overallAQI: number;
 }
 
+const timeRanges = [5, 10, 15, 20]; // Years to predict
+
 export default function MapPage() {
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
@@ -278,6 +281,11 @@ export default function MapPage() {
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [predictionData, setPredictionData] = useState<PredictionData[]>([]);
   const [isPredictionLoading, setIsPredictionLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
+  const [specificPrediction, setSpecificPrediction] =
+    useState<PredictionData | null>(null);
 
   const fetchLocationData = useCallback(async (lat: number, lng: number) => {
     setIsLoading(true);
@@ -424,22 +432,32 @@ export default function MapPage() {
     setIsLoading(false);
   }, []);
 
-  const fetchPredictions = useCallback(async (lat: number, lng: number) => {
-    setIsPredictionLoading(true);
-    try {
-      const currentYear = new Date().getFullYear();
-      const predictions = await Promise.all(
-        Array.from({ length: 5 }, async (_, i) => {
-          const date = `${currentYear + i}-01-01`;
-          return await predict(date, lng, lat);
-        })
-      );
-      setPredictionData(predictions);
-    } catch (error) {
-      console.error("Failed to fetch predictions:", error);
-    }
-    setIsPredictionLoading(false);
-  }, []);
+  const fetchPredictions = useCallback(
+    async (lat: number, lng: number) => {
+      setIsPredictionLoading(true);
+      try {
+        // Get long-term predictions
+        const startDate = new Date();
+        const predictions = await Promise.all(
+          Array.from({ length: 20 }, async (_, i) => {
+            const date = format(addYears(startDate, i + 1), "yyyy-MM-dd");
+            return await predict(date, lng, lat);
+          })
+        );
+        setPredictionData(predictions);
+
+        // Get specific date prediction if set
+        if (selectedDate) {
+          const specific = await predict(selectedDate, lng, lat);
+          setSpecificPrediction(specific);
+        }
+      } catch (error) {
+        console.error("Failed to fetch predictions:", error);
+      }
+      setIsPredictionLoading(false);
+    },
+    [selectedDate]
+  );
 
   const handlePlaceSelect = useCallback(() => {
     const place = searchBoxRef.current?.getPlace();
@@ -565,7 +583,7 @@ export default function MapPage() {
     if (!predictionData.length) return null;
 
     const chartData = predictionData.map((data, index) => {
-      const year = new Date().getFullYear() + index;
+      const year = new Date().getFullYear() + index + 1;
       return {
         year,
         aqi: Math.round(data.overallAQI),
@@ -577,74 +595,143 @@ export default function MapPage() {
     });
 
     return (
-      <div className="h-64 w-full mt-4">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#64748b20" />
-            <XAxis dataKey="year" stroke="#64748b" fontSize={12} />
-            <YAxis
-              stroke="#64748b"
-              fontSize={12}
-              label={{
-                value: "AQI",
-                angle: -90,
-                position: "insideLeft",
-                style: { fill: "#64748b" },
-              }}
-            />
-            <RechartsTooltip
-              contentStyle={{
-                backgroundColor: "rgba(255, 255, 255, 0.9)",
-                border: "1px solid #e2e8f0",
-                borderRadius: "0.375rem",
-                fontSize: "0.875rem",
-              }}
-            />
-            <Line
-              type="monotone"
-              dataKey="aqi"
-              stroke="#0f172a"
-              strokeWidth={2}
-              name="Overall AQI"
-              dot={{ fill: "#0f172a" }}
-            />
-            <Line
-              type="monotone"
-              dataKey="o3"
-              stroke="#3b82f6"
-              strokeWidth={1.5}
-              name="O₃ AQI"
-              dot={{ fill: "#3b82f6" }}
-            />
-            <Line
-              type="monotone"
-              dataKey="co"
-              stroke="#ef4444"
-              strokeWidth={1.5}
-              name="CO AQI"
-              dot={{ fill: "#ef4444" }}
-            />
-            <Line
-              type="monotone"
-              dataKey="so2"
-              stroke="#eab308"
-              strokeWidth={1.5}
-              name="SO₂ AQI"
-              dot={{ fill: "#eab308" }}
-            />
-            <Line
-              type="monotone"
-              dataKey="no2"
-              stroke="#84cc16"
-              strokeWidth={1.5}
-              name="NO₂ AQI"
-              dot={{ fill: "#84cc16" }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+      <div className="space-y-6">
+        <div className="bg-white/90 rounded-lg border border-slate-200/50 p-4">
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#64748b20" />
+                <XAxis
+                  dataKey="year"
+                  stroke="#64748b"
+                  fontSize={12}
+                  ticks={timeRanges.map(
+                    (years) => new Date().getFullYear() + years
+                  )}
+                />
+                <YAxis
+                  stroke="#64748b"
+                  fontSize={12}
+                  label={{
+                    value: "AQI",
+                    angle: -90,
+                    position: "insideLeft",
+                    style: { fill: "#64748b" },
+                  }}
+                />
+                <RechartsTooltip
+                  contentStyle={{
+                    backgroundColor: "rgba(255, 255, 255, 0.9)",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "0.375rem",
+                    fontSize: "0.875rem",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="aqi"
+                  stroke="#0f172a"
+                  strokeWidth={2}
+                  name="Overall AQI"
+                  dot={{ fill: "#0f172a", r: 2 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="o3"
+                  stroke="#3b82f6"
+                  strokeWidth={1}
+                  name="O₃ AQI"
+                  dot={{ fill: "#3b82f6", r: 2 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="co"
+                  stroke="#ef4444"
+                  strokeWidth={1}
+                  name="CO AQI"
+                  dot={{ fill: "#ef4444", r: 2 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="so2"
+                  stroke="#eab308"
+                  strokeWidth={1}
+                  name="SO₂ AQI"
+                  dot={{ fill: "#eab308", r: 2 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="no2"
+                  stroke="#84cc16"
+                  strokeWidth={1}
+                  name="NO₂ AQI"
+                  dot={{ fill: "#84cc16", r: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Specific date prediction */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <h3 className="text-sm font-medium text-slate-900">
+              Specific Date Prediction
+            </h3>
+            <div className="relative">
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={async (e) => {
+                  setSelectedDate(e.target.value);
+                  if (currentLocation) {
+                    const specific = await predict(
+                      e.target.value,
+                      currentLocation.lng,
+                      currentLocation.lat
+                    );
+                    setSpecificPrediction(specific);
+                  }
+                }}
+                className="pl-10 pr-4 py-1.5 border border-slate-200 rounded-lg bg-white/90 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <Calendar
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"
+                size={16}
+              />
+            </div>
+          </div>
+
+          <div className="bg-white/90 rounded-lg border border-slate-200/50 p-4">
+            <div className="grid grid-cols-5 gap-4">
+              {[
+                { label: "Overall AQI", key: "overallAQI" },
+                { label: "O₃ AQI", key: "o3" },
+                { label: "CO AQI", key: "co" },
+                { label: "SO₂ AQI", key: "so2" },
+                { label: "NO₂ AQI", key: "no2" },
+              ].map(({ label, key }) => (
+                <div key={label} className="text-center">
+                  <div className="text-xs text-slate-600 mb-1">{label}</div>
+                  <div className="text-lg font-semibold text-slate-900">
+                    {specificPrediction
+                      ? Math.round(
+                          key === "overallAQI"
+                            ? specificPrediction[key]
+                            : specificPrediction[
+                                key as keyof Omit<PredictionData, "overallAQI">
+                              ].aqi
+                        )
+                      : "-"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
-  }, [predictionData]);
+  }, [predictionData, selectedDate, currentLocation, specificPrediction]);
 
   const AirQualityPanel = useMemo(
     () => (
