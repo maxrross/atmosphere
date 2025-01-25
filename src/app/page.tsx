@@ -12,7 +12,7 @@ declare global {
 
 export default function Home() {
   const vantaRef = useRef<HTMLDivElement>(null)
-  const [vantaEffect, setVantaEffect] = useState<any>(null)
+  const [vantaEffect, setVantaEffect] = useState<ReturnType<typeof CLOUDS> | null>(null)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function Home() {
     return () => {
       if (vantaEffect) vantaEffect.destroy()
     }
-  }, [mounted])
+  }, [mounted, vantaEffect])
 
   const content = (
     <div className="text-center space-y-2 max-w-4xl mx-auto px-4">

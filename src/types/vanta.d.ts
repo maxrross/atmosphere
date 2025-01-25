@@ -3,7 +3,7 @@ declare module 'vanta/dist/vanta.clouds.min' {
 
   interface VantaCloudOptions {
     el: HTMLElement | null;
-    THREE: any;
+    THREE: typeof THREE;
     mouseControls?: boolean;
     touchControls?: boolean;
     gyroControls?: boolean;
