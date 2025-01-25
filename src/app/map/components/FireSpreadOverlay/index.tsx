@@ -209,6 +209,12 @@ export const FireSpreadOverlay: React.FC<FireSpreadOverlayProps> = ({
       coordinates: simulationData?.timeframes?.[0]?.coordinates,
     });
 
+    // Clean up previous overlay
+    if (overlayRef.current) {
+      overlayRef.current.setMap(null);
+      overlayRef.current = null;
+    }
+
     if (!map || !simulationData || !window.google) {
       console.log("Missing required props:", {
         hasMap: !!map,
@@ -219,33 +225,40 @@ export const FireSpreadOverlay: React.FC<FireSpreadOverlayProps> = ({
       return;
     }
 
-    // Create the overlay if it doesn't exist
-    if (!overlayRef.current) {
-      console.log("Creating new FireOverlay");
-      const FireOverlay = createFireOverlay(window.google);
-      overlayRef.current = new FireOverlay();
-      overlayRef.current.setMap(map);
+    // Create new overlay
+    console.log("Creating new FireOverlay");
+    const FireOverlay = createFireOverlay(window.google);
+    overlayRef.current = new FireOverlay();
+    overlayRef.current.setMap(map);
 
-      // Initialize with first frame
-      if (simulationData.timeframes.length > 0) {
-        console.log(
-          "Initializing with first frame:",
-          simulationData.timeframes[0]
-        );
-        const firstFrame = simulationData.timeframes[0];
-        overlayRef.current.updatePolygon(
-          firstFrame.coordinates,
-          firstFrame.coordinates,
-          1
-        );
-      }
+    // Initialize with first frame
+    if (simulationData.timeframes.length > 0) {
+      console.log(
+        "Initializing with first frame:",
+        simulationData.timeframes[0]
+      );
+      const firstFrame = simulationData.timeframes[0];
+      overlayRef.current.updatePolygon(
+        firstFrame.coordinates,
+        firstFrame.coordinates,
+        1
+      );
     }
 
+    // Cleanup function
     return () => {
       console.log("Cleaning up FireSpreadOverlay");
       if (overlayRef.current) {
         overlayRef.current.setMap(null);
+        overlayRef.current = null;
       }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      setCurrentTimeIndex(0);
+      setIsPlaying(false);
+      lastUpdateTime.current = 0;
+      animationProgress.current = 0;
     };
   }, [map, simulationData]);
 

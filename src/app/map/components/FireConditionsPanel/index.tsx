@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, useState, useEffect } from "react";
 import {
   Flame,
   Wind,
@@ -51,6 +51,13 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
     null
   );
   const [showOverlay, setShowOverlay] = useState(false);
+
+  // Reset simulation when location changes
+  useEffect(() => {
+    setSimulationData(null);
+    setShowOverlay(false);
+    setIsSimulating(false);
+  }, [lat, lng]);
 
   // Hide if zoomed out
   if (mapZoom < 10) return null;
