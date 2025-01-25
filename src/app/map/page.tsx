@@ -993,6 +993,13 @@ export default function MapPage() {
                         </div>
                       )}
 
+                    <div className="flex items-center gap-2 mb-3 text-sm p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
+                      <Mountain className="text-blue-500" size={16} />
+                      <span className="text-sm flex flex-row bg-gradient-to-t from-slate-600 to-slate-900 bg-clip-text text-transparent">
+                        <p className="text-slate-700 font-md mr-2">Elevation</p> {locationData.elevation ? `${Math.round(locationData.elevation)}m` : "N/A"}
+                      </span>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-2">
                       <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
                         <div className="flex items-center gap-2 mb-2">
@@ -1075,13 +1082,6 @@ export default function MapPage() {
                           <div className="text-xs text-slate-500">No UV data available</div>
                         )}
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 mb-3 text-sm p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
-                      <Mountain className="text-blue-500" size={16} />
-                      <span className="text-sm flex flex-row bg-gradient-to-t from-slate-600 to-slate-900 bg-clip-text text-transparent">
-                        <p className="text-slate-700 font-md mr-2">Elevation</p> {locationData.elevation ? `${Math.round(locationData.elevation)}m` : "N/A"}
-                      </span>
                     </div>
 
                     {/* Health Recommendations Section */}
