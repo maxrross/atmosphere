@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useMemo, useEffect } from "react"
 import { GoogleMap, useLoadScript, StreetViewPanorama, Autocomplete } from "@react-google-maps/api"
-import { Search, MapPin, Wind, Calendar, ChevronRight, Droplets, Mountain } from "lucide-react"
+import { Search, MapPin, Wind, Calendar, ChevronRight, Droplets, Mountain, Sun } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -57,6 +57,12 @@ interface LocationData {
       index: number;
       risk: string;
     };
+  };
+  uvData?: {
+    uv: number;
+    uvMax: number;
+    uvMaxTime: string;
+    safeExposureMinutes: number;
   };
   elevation?: number;
   address?: string;
@@ -195,6 +201,7 @@ interface HistoryEntry {
 interface AirQualityPollutant {
   concentration: { value: number };
   code: string;
+  aqi?: number;
 }
 
 interface HealthRecommendation {
@@ -312,6 +319,14 @@ const HealthPanel = ({ locationData, isLoading, mapZoom }: { locationData: Locat
   );
 };
 
+const getUvRiskLevel = (uv: number) => {
+  if (uv <= 2) return { risk: "Low", color: "text-green-600" };
+  if (uv <= 5) return { risk: "Moderate", color: "text-yellow-600" };
+  if (uv <= 7) return { risk: "High", color: "text-orange-600" };
+  if (uv <= 10) return { risk: "Very High", color: "text-red-600" };
+  return { risk: "Extreme", color: "text-purple-600" };
+};
+
 export default function MapPage() {
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
@@ -342,20 +357,30 @@ export default function MapPage() {
       })
       const elevation = elevationResult.results[0]?.elevation
 
-      // Fetch air quality and pollen data from our API route
-      const response = await fetch('/api/location-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ lat, lng, hours: 120 }), // Fixed at 5 days of history
-      })
+      // Fetch air quality, pollen, and UV data from our API routes
+      const [locationResponse, uvResponse] = await Promise.all([
+        fetch('/api/location-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ lat, lng, hours: 120 }), // Fixed at 5 days of history
+        }),
+        fetch('/api/uv-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ lat, lng, alt: elevation || 0 }),
+        })
+      ]);
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`)
+      if (!locationResponse.ok) {
+        throw new Error(`Location API error: ${locationResponse.status}`)
       }
 
-      const { airQualityData, historyData, pollenData } = await response.json()
+      const { airQualityData, historyData, pollenData } = await locationResponse.json()
+      const uvData = uvResponse.ok ? await uvResponse.json() : null;
       
       // Only process data if it's available and doesn't contain errors
       if (airQualityData && !airQualityData.error) {
@@ -374,8 +399,8 @@ export default function MapPage() {
         const pollutants: { [key: string]: { concentration: number; aqi: number; additionalInfo?: { sources: string; effects: string } } } = {}
         airQualityData?.pollutants?.forEach((pollutant: AirQualityPollutant) => {
           pollutants[pollutant.code] = {
-            concentration: pollutant.concentration?.value || 0,
-            aqi: 0,
+            concentration: pollutant.concentration.value,
+            aqi: pollutant.aqi || 0,
             additionalInfo: pollutantInfo[pollutant.code.toLowerCase() as PollutantCode]
           }
         })
@@ -410,6 +435,12 @@ export default function MapPage() {
               risk: getRiskLevel(pollenData.weedIndex),
             },
           } : undefined,
+          uvData: uvData?.result ? {
+            uv: uvData.result.uv,
+            uvMax: uvData.result.uv_max,
+            uvMaxTime: uvData.result.uv_max_time,
+            safeExposureMinutes: uvData.result.safe_exposure_time?.st1 || 0,
+          } : undefined,
           elevation,
           address,
         })
@@ -422,7 +453,6 @@ export default function MapPage() {
       }
     } catch (error) {
       console.error("Error fetching location data:", error)
-      // Set some default data in case of error
       setLocationData({
         airQuality: {
           aqi: 50,
@@ -732,6 +762,13 @@ export default function MapPage() {
                 </div>
               )}
 
+              <div className="flex items-center gap-2 mb-3 text-sm p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
+                <Mountain className="text-blue-500" size={16} />
+                <span className="text-sm flex flex-row  bg-gradient-to-t from-slate-600 to-slate-900 bg-clip-text text-transparent">
+                  <p className="text-slate-700 font-md mr-2">Elevation</p> {locationData.elevation ? `${Math.round(locationData.elevation)}m` : "N/A"}
+                </span>
+              </div>
+
               <div className="grid grid-cols-2 gap-2">
                 <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
                   <div className="flex items-center gap-2 mb-2">
@@ -765,12 +802,40 @@ export default function MapPage() {
 
                 <div className="p-3 bg-slate-50/80 backdrop-blur-sm rounded-md">
                   <div className="flex items-center gap-2 mb-2">
-                    <Mountain className="text-blue-500" size={18} />
-                    <span className="text-sm font-medium bg-gradient-to-t from-slate-600 to-slate-900 bg-clip-text text-transparent">Elevation</span>
+                    <Sun className="text-yellow-500" size={18} />
+                    <span className="text-sm font-medium bg-gradient-to-t from-slate-600 to-slate-900 bg-clip-text text-transparent">UV Index</span>
                   </div>
-                  <div className="text-sm text-slate-700">
-                    {locationData.elevation ? `${Math.round(locationData.elevation)}m` : "N/A"}
-                  </div>
+                  {locationData.uvData ? (
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-slate-600">Current</span>
+                        <div className="flex items-center gap-1">
+                          <span className={`text-sm font-medium ${getUvRiskLevel(locationData.uvData.uv).color}`}>
+                            {locationData.uvData.uv.toFixed(1)}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            ({getUvRiskLevel(locationData.uvData.uv).risk})
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-slate-600">Max Today</span>
+                        <div className="flex items-center gap-1">
+                          <span className={`text-sm font-medium ${getUvRiskLevel(locationData.uvData.uvMax).color}`}>
+                            {locationData.uvData.uvMax.toFixed(1)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-slate-600">Safe Exposure</span>
+                        <span className="text-sm text-slate-700">
+                          {Math.round(locationData.uvData.safeExposureMinutes)} min
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-slate-500">No UV data available</div>
+                  )}
                 </div>
               </div>
 
