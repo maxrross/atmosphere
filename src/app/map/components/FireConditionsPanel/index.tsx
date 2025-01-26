@@ -5,9 +5,19 @@ import {
   Droplets,
   ThermometerSun,
   PlayCircle,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import type { FireConditionsData } from "../../types";
 import { FireSpreadOverlay } from "../FireSpreadOverlay";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { format, addDays } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface FireConditionsPanelProps {
   mapZoom: number;
@@ -20,6 +30,8 @@ interface FireConditionsPanelProps {
   lng: number;
   address: string;
   map: google.maps.Map | null;
+  selectedDate: string;
+  onDateChange: (date: string) => void;
 }
 
 interface SimulationTimeframe {
@@ -42,6 +54,8 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
   lng,
   address,
   map,
+  selectedDate,
+  onDateChange,
 }) => {
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationData, setSimulationData] = useState<SimulationData | null>(
@@ -55,6 +69,14 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
     setShowOverlay(false);
     setIsSimulating(false);
   }, [lat, lng]);
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      // Add one day to compensate for timezone offset
+      const adjustedDate = addDays(date, 1);
+      onDateChange(format(adjustedDate, "yyyy-MM-dd"));
+    }
+  };
 
   // Hide if zoomed out
   if (mapZoom < 10) return null;
@@ -82,12 +104,17 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
     setShowOverlay(false);
     setIsSimulating(true);
     try {
-      console.log("Starting simulation with:", { lat, lng, address });
+      console.log("Starting simulation with:", {
+        lat,
+        lng,
+        address,
+        date: selectedDate,
+      });
 
       const response = await fetch("/api/fire-simulation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lat, lng, address }),
+        body: JSON.stringify({ lat, lng, address, date: selectedDate }),
       });
       const data = await response.json();
       console.log("Received simulation data:", data);
@@ -122,7 +149,7 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
               Fire Risk
             </h3>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={handleSimulation}
               disabled={isSimulating}
@@ -163,6 +190,11 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
                   <div className="h-4 w-16 bg-slate-200 rounded-md animate-pulse"></div>
                 </div>
               </div>
+            </div>
+
+            {/* Date Picker Skeleton */}
+            <div className="flex justify-center">
+              <div className="h-9 w-40 bg-slate-200 rounded-md animate-pulse"></div>
             </div>
 
             {/* Explanation Skeleton */}
@@ -231,6 +263,36 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Date Picker */}
+            <div className="flex justify-center">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[200px] justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? (
+                      format(new Date(selectedDate), "PPP")
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="center">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate ? new Date(selectedDate) : undefined}
+                    onSelect={handleDateSelect}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* Explanation */}

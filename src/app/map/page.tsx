@@ -14,7 +14,11 @@ import {
   defaultLocation,
   streetViewOptions,
 } from "./constants";
-import { getHealthRecommendations, getAqiLevel, getSafeExposureMinutes } from "./utils";
+import {
+  getHealthRecommendations,
+  getAqiLevel,
+  getSafeExposureMinutes,
+} from "./utils";
 import type { LocationData, PredictionData, FireConditionsData } from "./types";
 
 export default function MapPage() {
@@ -37,6 +41,9 @@ export default function MapPage() {
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
+  const [fireRiskDate, setFireRiskDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
   const [specificPrediction, setSpecificPrediction] =
     useState<PredictionData | null>(null);
   const [fireData, setFireData] = useState<FireConditionsData>({
@@ -44,154 +51,156 @@ export default function MapPage() {
     explanation: "No fire risk data available",
   });
   const [isFireDataLoading, setIsFireDataLoading] = useState(false);
-  const [locationMarker, setLocationMarker] = useState<google.maps.Marker | null>(null);
+  const [locationMarker, setLocationMarker] =
+    useState<google.maps.Marker | null>(null);
 
   const timeRanges = [5, 10, 15, 20]; // Years to predict
 
-  const fetchLocationData = useCallback(
-    async (lat: number, lng: number) => {
-      setIsLoading(true);
-      setIsFireDataLoading(true);
-      try {
-        // Geocoding API request
-        const geocoder = new google.maps.Geocoder();
-        const geocodeResult = await geocoder.geocode({
-          location: { lat, lng },
-        });
-        const address = geocodeResult.results[0]?.formatted_address;
+  const fetchLocationData = useCallback(async (lat: number, lng: number) => {
+    setIsLoading(true);
+    setIsFireDataLoading(true);
+    try {
+      // Geocoding API request
+      const geocoder = new google.maps.Geocoder();
+      const geocodeResult = await geocoder.geocode({
+        location: { lat, lng },
+      });
+      const address = geocodeResult.results[0]?.formatted_address;
 
-        // Elevation API request
-        const elevator = new google.maps.ElevationService();
-        const elevationResult = await elevator.getElevationForLocations({
-          locations: [{ lat, lng }],
-        });
-        const elevation = elevationResult.results[0]?.elevation;
+      // Elevation API request
+      const elevator = new google.maps.ElevationService();
+      const elevationResult = await elevator.getElevationForLocations({
+        locations: [{ lat, lng }],
+      });
+      const elevation = elevationResult.results[0]?.elevation;
 
-        // Fetch all data in parallel
-        const [locationResponse, fireResponse, uvResponse] = await Promise.all([
-          fetch("/api/location-data", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ lat, lng, hours: 120 }),
-          }),
-          fetch("/api/fire-risk", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              lat,
-              lng,
-              address,
-              date: new Date().toISOString().split("T")[0],
-            }),
-          }),
-          fetch(`/api/uv-data?lat=${lat}&lng=${lng}`, {
-            method: "GET",
-          }),
-        ]);
-
-        if (!locationResponse.ok) {
-          throw new Error(`Location API error: ${locationResponse.status}`);
-        }
-
-        const { airQualityData, historyData, pollenData } = await locationResponse.json();
-        const fireData = await fireResponse.json();
-        const uvData = uvResponse.ok ? await uvResponse.json() : null;
-
-        // Process data if available
-        if (airQualityData && !airQualityData.error) {
-          const getPreferredAqiIndex = (indexes: any[], regionCode: string) => {
-            if (regionCode === "us") {
-              return indexes?.find((idx) => idx.code === "usa_epa") || indexes?.[0];
-            }
-            return indexes?.find((idx) => idx.code === "uaqi") || indexes?.[0];
-          };
-
-          const preferredIndex = getPreferredAqiIndex(
-            airQualityData.indexes,
-            airQualityData.regionCode
-          );
-
-          const pollutants: {
-            [key: string]: { concentration: number; aqi: number };
-          } = {};
-          airQualityData?.pollutants?.forEach((pollutant: any) => {
-            pollutants[pollutant.code] = {
-              concentration: pollutant.concentration.value,
-              aqi: pollutant.aqi || 0,
-            };
-          });
-
-          const processedHistory =
-            historyData && !historyData.error
-              ? historyData.map((entry: any) => ({
-                  ...entry,
-                  preferredIndex: getPreferredAqiIndex(
-                    entry.indexes,
-                    airQualityData.regionCode
-                  ),
-                }))
-              : [];
-
-          setLocationData({
-            airQuality: {
-              aqi: preferredIndex?.aqi || 0,
-              mainPollutant: preferredIndex?.dominantPollutant || "Unknown",
-              level: getAqiLevel(preferredIndex?.aqi || 0),
-              pollutants,
-            },
-            regionCode: airQualityData.regionCode,
-            history: processedHistory,
-            pollen: pollenData,
-            elevation,
+      // Fetch all data in parallel
+      const [locationResponse, fireResponse, uvResponse] = await Promise.all([
+        fetch("/api/location-data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lat, lng, hours: 120 }),
+        }),
+        fetch("/api/fire-risk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lat,
+            lng,
             address,
-          });
+            date: new Date().toISOString().split("T")[0],
+          }),
+        }),
+        fetch(`/api/uv-data?lat=${lat}&lng=${lng}`, {
+          method: "GET",
+        }),
+      ]);
 
-          if (uvData) {
-            setLocationData((prev) => ({
-              ...prev,
-              uvData: {
-                uv: uvData.now.uvi,
-                uvMax: Math.max(...uvData.forecast.map((f: { uvi: number }) => f.uvi)),
-                uvMaxTime: uvData.forecast.reduce(
-                  (maxTime: string, f: { time: string; uvi: number }) =>
-                    f.uvi >
-                    uvData.forecast.find(
-                      (x: { time: string; uvi: number }) => x.time === maxTime
-                    )?.uvi
-                      ? f.time
-                      : maxTime,
-                  uvData.forecast[0].time
-                ),
-                safeExposureMinutes: getSafeExposureMinutes(uvData.now.uvi),
-              },
-            }));
+      if (!locationResponse.ok) {
+        throw new Error(`Location API error: ${locationResponse.status}`);
+      }
+
+      const { airQualityData, historyData, pollenData } =
+        await locationResponse.json();
+      const fireData = await fireResponse.json();
+      const uvData = uvResponse.ok ? await uvResponse.json() : null;
+
+      // Process data if available
+      if (airQualityData && !airQualityData.error) {
+        const getPreferredAqiIndex = (indexes: any[], regionCode: string) => {
+          if (regionCode === "us") {
+            return (
+              indexes?.find((idx) => idx.code === "usa_epa") || indexes?.[0]
+            );
           }
-        } else {
-          setLocationData({
-            elevation,
-            address,
-          });
-        }
+          return indexes?.find((idx) => idx.code === "uaqi") || indexes?.[0];
+        };
 
-        // Set fire data
-        setFireData(fireData);
+        const preferredIndex = getPreferredAqiIndex(
+          airQualityData.indexes,
+          airQualityData.regionCode
+        );
 
-      } catch (error) {
-        console.error("Error fetching location data:", error);
-        setLocationData({
-          elevation: 0,
-          address: "Location data unavailable",
+        const pollutants: {
+          [key: string]: { concentration: number; aqi: number };
+        } = {};
+        airQualityData?.pollutants?.forEach((pollutant: any) => {
+          pollutants[pollutant.code] = {
+            concentration: pollutant.concentration.value,
+            aqi: pollutant.aqi || 0,
+          };
         });
-        setFireData({
-          riskScore: 0,
-          explanation: "Unable to assess fire risk at this time",
+
+        const processedHistory =
+          historyData && !historyData.error
+            ? historyData.map((entry: any) => ({
+                ...entry,
+                preferredIndex: getPreferredAqiIndex(
+                  entry.indexes,
+                  airQualityData.regionCode
+                ),
+              }))
+            : [];
+
+        setLocationData({
+          airQuality: {
+            aqi: preferredIndex?.aqi || 0,
+            mainPollutant: preferredIndex?.dominantPollutant || "Unknown",
+            level: getAqiLevel(preferredIndex?.aqi || 0),
+            pollutants,
+          },
+          regionCode: airQualityData.regionCode,
+          history: processedHistory,
+          pollen: pollenData,
+          elevation,
+          address,
+        });
+
+        if (uvData) {
+          setLocationData((prev) => ({
+            ...prev,
+            uvData: {
+              uv: uvData.now.uvi,
+              uvMax: Math.max(
+                ...uvData.forecast.map((f: { uvi: number }) => f.uvi)
+              ),
+              uvMaxTime: uvData.forecast.reduce(
+                (maxTime: string, f: { time: string; uvi: number }) =>
+                  f.uvi >
+                  uvData.forecast.find(
+                    (x: { time: string; uvi: number }) => x.time === maxTime
+                  )?.uvi
+                    ? f.time
+                    : maxTime,
+                uvData.forecast[0].time
+              ),
+              safeExposureMinutes: getSafeExposureMinutes(uvData.now.uvi),
+            },
+          }));
+        }
+      } else {
+        setLocationData({
+          elevation,
+          address,
         });
       }
-      setIsLoading(false);
-      setIsFireDataLoading(false);
-    },
-    []
-  );
+
+      // Set fire data
+      setFireData(fireData);
+    } catch (error) {
+      console.error("Error fetching location data:", error);
+      setLocationData({
+        elevation: 0,
+        address: "Location data unavailable",
+      });
+      setFireData({
+        riskScore: 0,
+        explanation: "Unable to assess fire risk at this time",
+      });
+    }
+    setIsLoading(false);
+    setIsFireDataLoading(false);
+  }, []);
 
   const fetchPredictions = useCallback(
     async (lat: number, lng: number) => {
@@ -344,39 +353,53 @@ export default function MapPage() {
     const streetViewService = new google.maps.StreetViewService();
 
     const checkAndLoadStreetView = () => {
-      streetViewService.getPanorama({
-        location: currentLocation,
-        radius: 50,
-        preference: google.maps.StreetViewPreference.NEAREST
-      }, (data, status) => {
-        if (status === google.maps.StreetViewStatus.OK && data && data.location?.latLng) {
-          if (locationMarker) {
-            locationMarker.setVisible(false);
-          }
-          
-          panorama.setPosition(data.location.latLng);
-          panorama.setVisible(true);
-        } else {
-          // Try larger radius
-          streetViewService.getPanorama({
-            location: currentLocation,
-            radius: 500,
-            preference: google.maps.StreetViewPreference.NEAREST
-          }, (data, status) => {
-            if (status === google.maps.StreetViewStatus.OK && data && data.location?.latLng) {
-              if (locationMarker) {
-                locationMarker.setVisible(false);
-              }
-
-              panorama.setPosition(data.location.latLng);
-              panorama.setVisible(true);
-            } else {
-              console.log("No Street View available for this location");
-              setShowStreetView(false);
+      streetViewService.getPanorama(
+        {
+          location: currentLocation,
+          radius: 50,
+          preference: google.maps.StreetViewPreference.NEAREST,
+        },
+        (data, status) => {
+          if (
+            status === google.maps.StreetViewStatus.OK &&
+            data &&
+            data.location?.latLng
+          ) {
+            if (locationMarker) {
+              locationMarker.setVisible(false);
             }
-          });
+
+            panorama.setPosition(data.location.latLng);
+            panorama.setVisible(true);
+          } else {
+            // Try larger radius
+            streetViewService.getPanorama(
+              {
+                location: currentLocation,
+                radius: 500,
+                preference: google.maps.StreetViewPreference.NEAREST,
+              },
+              (data, status) => {
+                if (
+                  status === google.maps.StreetViewStatus.OK &&
+                  data &&
+                  data.location?.latLng
+                ) {
+                  if (locationMarker) {
+                    locationMarker.setVisible(false);
+                  }
+
+                  panorama.setPosition(data.location.latLng);
+                  panorama.setVisible(true);
+                } else {
+                  console.log("No Street View available for this location");
+                  setShowStreetView(false);
+                }
+              }
+            );
+          }
         }
-      });
+      );
     };
 
     if (showStreetView) {
@@ -404,10 +427,11 @@ export default function MapPage() {
   useEffect(() => {
     if (mapRef.current && isLoaded) {
       // Only create a marker if one doesn't exist or location has changed
-      if (!locationMarker || 
-          locationMarker.getPosition()?.lat() !== currentLocation.lat || 
-          locationMarker.getPosition()?.lng() !== currentLocation.lng) {
-        
+      if (
+        !locationMarker ||
+        locationMarker.getPosition()?.lat() !== currentLocation.lat ||
+        locationMarker.getPosition()?.lng() !== currentLocation.lng
+      ) {
         // Remove existing marker
         if (locationMarker) {
           locationMarker.setMap(null);
@@ -418,13 +442,13 @@ export default function MapPage() {
           position: currentLocation,
           map: mapRef.current,
           animation: google.maps.Animation.DROP,
-          title: locationData.address || 'Selected Location'
+          title: locationData.address || "Selected Location",
         });
 
         setLocationMarker(marker);
       } else {
         // Just update the title if only the address changed
-        locationMarker.setTitle(locationData.address || 'Selected Location');
+        locationMarker.setTitle(locationData.address || "Selected Location");
       }
 
       return () => {
@@ -457,6 +481,44 @@ export default function MapPage() {
     },
     [fetchLocationData, fetchPredictions, showHeatmap]
   );
+
+  const fetchFireRisk = useCallback(async () => {
+    setIsFireDataLoading(true);
+    try {
+      const response = await fetch("/api/fire-risk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lat: currentLocation.lat,
+          lng: currentLocation.lng,
+          address: locationData.address,
+          date: fireRiskDate,
+        }),
+      });
+      const data = await response.json();
+      setFireData(data);
+    } catch (error) {
+      console.error("Error fetching fire risk:", error);
+      setFireData({
+        riskScore: 0,
+        explanation: "Error fetching fire risk data",
+      });
+    } finally {
+      setIsFireDataLoading(false);
+    }
+  }, [
+    currentLocation.lat,
+    currentLocation.lng,
+    locationData.address,
+    fireRiskDate,
+  ]);
+
+  // Update fire risk when date changes
+  useEffect(() => {
+    if (locationData.address) {
+      fetchFireRisk();
+    }
+  }, [fetchFireRisk, locationData.address]);
 
   if (!isLoaded) {
     return (
@@ -498,6 +560,8 @@ export default function MapPage() {
         lng={currentLocation.lng}
         address={locationData.address || ""}
         map={mapRef.current}
+        selectedDate={fireRiskDate}
+        onDateChange={setFireRiskDate}
       />
 
       <GoogleMap

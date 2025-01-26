@@ -17,7 +17,7 @@ const structuredSchema = {
   properties: {
     riskScore: {
       type: SchemaType.NUMBER,
-      description: "Fire risk score from 1–100",
+      description: "Fire risk score from 10–100",
       nullable: false,
     },
     explanation: {
@@ -62,7 +62,9 @@ Consider factors like:
 - Vegetation
 - Urban proximity
 
-Provide a risk score from 1–100 (where 100 is highest risk) and a brief explanation in 2-3 concise sentences.`;
+- For example, areas with the highest risk such as California during the summer would be 100, areas with low risk such as the Northeast during the winter would be close to 10, and areas in between such as the Midwest during the fall would be somewhere in between. Scale this risk depending on the time of year.
+
+Provide a risk score from 1–100 (where 100 is highest risk) and a brief explanation in 2-3 concise sentences. This is on a scale for the United States so there should be some places that would be 0, some that would be 100, and some that would be anywhere in between. Be accurate and realistic. Do not ever give a 10 score. It need to be 10-100`;
 
     //
     // Send the prompt to Gemini, which will respond with valid JSON
