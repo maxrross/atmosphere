@@ -35,6 +35,29 @@ Atmosphere is a comprehensive environmental health monitoring dashboard that pro
   - Custom data preprocessing pipeline for geocoding and feature engineering
   - Check out our [ML Repository](https://github.com/blakerand/atmosphere-ml) to see how the model was built and [EPA Dataset](https://www.kaggle.com/datasets/guslovesmath/us-pollution-data-200-to-2022/data) to see the data used to train the model.
 
+- **🔥 Fire Risk Prediction**
+
+  - Powered by Google's Gemini LLM
+  - Real-time fire risk assessment based on:
+    - Location-specific environmental conditions
+    - Historical fire data
+    - Current weather patterns
+    - Vegetation and terrain analysis
+  - Provides detailed risk explanations and preventive measures
+  - Updates dynamically with changing conditions
+
+- **🌋 Fire Simulation**
+
+  - Interactive wildfire scenario simulation
+  - Uses real-world data to model potential fire spread
+  - Factors considered:
+    - Topography and terrain
+    - Wind patterns and weather conditions
+    - Vegetation density and type
+    - Historical fire behavior
+  - Visualizes potential impact zones
+  - Helps in emergency preparedness and planning
+
 - **UV Index**
 
   - Current UV levels
