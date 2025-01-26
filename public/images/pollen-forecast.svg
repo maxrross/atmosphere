@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="400" viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="400" fill="#F8FAFC"/>
+  
+  <!-- Grid Lines -->
+  <path d="M50 350 H750" stroke="#E2E8F0" stroke-width="1"/>
+  <path d="M50 280 H750" stroke="#E2E8F0" stroke-width="1"/>
+  <path d="M50 210 H750" stroke="#E2E8F0" stroke-width="1"/>
+  <path d="M50 140 H750" stroke="#E2E8F0" stroke-width="1"/>
+  <path d="M50 70 H750" stroke="#E2E8F0" stroke-width="1"/>
+  
+  <!-- Tree Pollen Line -->
+  <path d="M50 280 C150 260, 250 150, 350 200 C450 250, 550 180, 650 150 L750 120" 
+        stroke="#22C55E" stroke-width="3" fill="none"/>
+  
+  <!-- Grass Pollen Line -->
+  <path d="M50 300 C150 280, 250 220, 350 240 C450 260, 550 200, 650 180 L750 160" 
+        stroke="#3B82F6" stroke-width="3" fill="none"/>
+  
+  <!-- Weed Pollen Line -->
+  <path d="M50 320 C150 300, 250 280, 350 260 C450 240, 550 220, 650 200 L750 180" 
+        stroke="#8B5CF6" stroke-width="3" fill="none"/>
+  
+  <!-- Legend -->
+  <circle cx="50" cy="30" r="6" fill="#22C55E"/>
+  <text x="70" y="35" font-family="system-ui" font-size="14" fill="#475569">Tree Pollen</text>
+  
+  <circle cx="180" cy="30" r="6" fill="#3B82F6"/>
+  <text x="200" y="35" font-family="system-ui" font-size="14" fill="#475569">Grass Pollen</text>
+  
+  <circle cx="310" cy="30" r="6" fill="#8B5CF6"/>
+  <text x="330" y="35" font-family="system-ui" font-size="14" fill="#475569">Weed Pollen</text>
+  
+  <!-- Axis Labels -->
+  <text x="400" y="390" text-anchor="middle" font-family="system-ui" font-size="14" fill="#475569">Time</text>
+  <text x="30" y="200" text-anchor="middle" transform="rotate(-90 30 200)" font-family="system-ui" font-size="14" fill="#475569">Pollen Count</text>
+  
+  <!-- Time Labels -->
+  <text x="50" y="370" text-anchor="middle" font-family="system-ui" font-size="12" fill="#64748B">Mon</text>
+  <text x="190" y="370" text-anchor="middle" font-family="system-ui" font-size="12" fill="#64748B">Tue</text>
+  <text x="330" y="370" text-anchor="middle" font-family="system-ui" font-size="12" fill="#64748B">Wed</text>
+  <text x="470" y="370" text-anchor="middle" font-family="system-ui" font-size="12" fill="#64748B">Thu</text>
+  <text x="610" y="370" text-anchor="middle" font-family="system-ui" font-size="12" fill="#64748B">Fri</text>
+  <text x="750" y="370" text-anchor="middle" font-family="system-ui" font-size="12" fill="#64748B">Sat</text>
+</svg> 

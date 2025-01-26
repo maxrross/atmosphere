@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="400" viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="400" fill="#F8FAFC"/>
+  
+  <!-- Input Layer -->
+  <circle cx="100" cy="100" r="20" fill="#3B82F6"/>
+  <circle cx="100" cy="200" r="20" fill="#3B82F6"/>
+  <circle cx="100" cy="300" r="20" fill="#3B82F6"/>
+  
+  <!-- Hidden Layer 1 -->
+  <circle cx="300" cy="80" r="20" fill="#6366F1"/>
+  <circle cx="300" cy="160" r="20" fill="#6366F1"/>
+  <circle cx="300" cy="240" r="20" fill="#6366F1"/>
+  <circle cx="300" cy="320" r="20" fill="#6366F1"/>
+  
+  <!-- Hidden Layer 2 -->
+  <circle cx="500" cy="100" r="20" fill="#8B5CF6"/>
+  <circle cx="500" cy="200" r="20" fill="#8B5CF6"/>
+  <circle cx="500" cy="300" r="20" fill="#8B5CF6"/>
+  
+  <!-- Output Layer -->
+  <circle cx="700" cy="200" r="20" fill="#EC4899"/>
+  
+  <!-- Connections -->
+  <path d="M120 100 L280 80" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M120 100 L280 160" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M120 100 L280 240" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M120 100 L280 320" stroke="#94A3B8" stroke-width="2"/>
+  
+  <path d="M120 200 L280 80" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M120 200 L280 160" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M120 200 L280 240" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M120 200 L280 320" stroke="#94A3B8" stroke-width="2"/>
+  
+  <path d="M120 300 L280 80" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M120 300 L280 160" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M120 300 L280 240" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M120 300 L280 320" stroke="#94A3B8" stroke-width="2"/>
+  
+  <path d="M320 80 L480 100" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M320 80 L480 200" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M320 80 L480 300" stroke="#94A3B8" stroke-width="2"/>
+  
+  <path d="M320 160 L480 100" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M320 160 L480 200" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M320 160 L480 300" stroke="#94A3B8" stroke-width="2"/>
+  
+  <path d="M320 240 L480 100" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M320 240 L480 200" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M320 240 L480 300" stroke="#94A3B8" stroke-width="2"/>
+  
+  <path d="M320 320 L480 100" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M320 320 L480 200" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M320 320 L480 300" stroke="#94A3B8" stroke-width="2"/>
+  
+  <path d="M520 100 L680 200" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M520 200 L680 200" stroke="#94A3B8" stroke-width="2"/>
+  <path d="M520 300 L680 200" stroke="#94A3B8" stroke-width="2"/>
+  
+  <!-- Labels -->
+  <text x="100" y="40" text-anchor="middle" font-family="system-ui" font-size="14" fill="#475569">Input Layer</text>
+  <text x="300" y="40" text-anchor="middle" font-family="system-ui" font-size="14" fill="#475569">Hidden Layer 1</text>
+  <text x="500" y="40" text-anchor="middle" font-family="system-ui" font-size="14" fill="#475569">Hidden Layer 2</text>
+  <text x="700" y="40" text-anchor="middle" font-family="system-ui" font-size="14" fill="#475569">Output Layer</text>
+</svg> 
