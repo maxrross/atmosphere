@@ -99,8 +99,13 @@ const createFireOverlay = (google: typeof globalThis.google) => {
         this.div = null;
       }
       if (this.currentPolygon) {
+        google.maps.event.clearInstanceListeners(this.currentPolygon);
         this.currentPolygon.setMap(null);
         this.currentPolygon = null;
+      }
+      const map = this.getMap() as google.maps.Map;
+      if (map) {
+        google.maps.event.clearListeners(map, "zoom_changed");
       }
     }
 
@@ -211,6 +216,7 @@ export const FireSpreadOverlay: React.FC<FireSpreadOverlayProps> = ({
 
     // Clean up previous overlay
     if (overlayRef.current) {
+      overlayRef.current.onRemove();
       overlayRef.current.setMap(null);
       overlayRef.current = null;
     }
@@ -249,6 +255,7 @@ export const FireSpreadOverlay: React.FC<FireSpreadOverlayProps> = ({
     return () => {
       console.log("Cleaning up FireSpreadOverlay");
       if (overlayRef.current) {
+        overlayRef.current.onRemove();
         overlayRef.current.setMap(null);
         overlayRef.current = null;
       }
