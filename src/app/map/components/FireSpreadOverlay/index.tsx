@@ -349,7 +349,7 @@ export const FireSpreadOverlay: React.FC<FireSpreadOverlayProps> = ({
 
   return (
     <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2">
-      <div className="bg-black/80 backdrop-blur-sm rounded-lg shadow-lg px-4 py-2 text-white text-center max-w-xl">
+      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200/50 px-4 py-2 text-slate-800 text-center max-w-xl">
         <p className="text-sm font-medium">
           {simulationData.timeframes[currentTimeIndex].impact}
         </p>
@@ -366,14 +366,18 @@ export const FireSpreadOverlay: React.FC<FireSpreadOverlayProps> = ({
             className="p-1 hover:bg-slate-100 rounded"
             title="Restart"
           >
-            <SkipBack size={20} />
+            <SkipBack size={20} className="text-slate-600" />
           </button>
           <button
             onClick={() => setIsPlaying(!isPlaying)}
             className="p-1 hover:bg-slate-100 rounded"
             title={isPlaying ? "Pause" : "Play"}
           >
-            {isPlaying ? <PauseCircle size={24} /> : <PlayCircle size={24} />}
+            {isPlaying ? (
+              <PauseCircle size={24} className="text-slate-600" />
+            ) : (
+              <PlayCircle size={24} className="text-slate-600" />
+            )}
           </button>
           <button
             onClick={() => {
@@ -384,7 +388,7 @@ export const FireSpreadOverlay: React.FC<FireSpreadOverlayProps> = ({
             className="p-1 hover:bg-slate-100 rounded"
             title="Skip to end"
           >
-            <SkipForward size={20} />
+            <SkipForward size={20} className="text-slate-600" />
           </button>
           <div className="text-sm font-medium text-slate-700 ml-2">
             {simulationData.timeframes[currentTimeIndex].hours}h

@@ -83,6 +83,10 @@ export const PredictionTab = ({
             Long-term AQI Prediction
           </span>
         </div>
+        <p className="text-xs text-slate-500 mb-3">
+          Predictions generated using a custom deep learning regression model trained on EPA pollution data (2000-2023).
+          Model features 7 input parameters and predicts pollutant concentrations and AQI values.
+        </p>
         <PredictionChart
           predictionData={predictionData}
           timeRanges={timeRanges}

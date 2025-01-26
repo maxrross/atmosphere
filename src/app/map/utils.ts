@@ -93,6 +93,7 @@ export const getHealthRecommendations = (
 };
 
 export const getSafeExposureMinutes = (uv: number): number => {
+  if (uv <= 0) return -1; // UV 0 - unlimited exposure
   if (uv <= 2) return 60; // Low - 60 minutes
   if (uv <= 5) return 30; // Moderate - 30 minutes
   if (uv <= 7) return 20; // High - 20 minutes
