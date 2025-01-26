@@ -1,6 +1,6 @@
 # Atmosphere - Environmental Health Dashboard
 
-![Atmosphere Logo](public/favicon.ico)
+![Atmosphere Logo](public/1.png)
 
 Atmosphere is a comprehensive environmental health monitoring dashboard that provides real-time insights into air quality, UV exposure, and pollen levels across the globe. Built with modern web technologies and designed with a beautiful, intuitive interface, it helps users make informed decisions about their outdoor activities.
 
