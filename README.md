@@ -22,6 +22,19 @@ Atmosphere is a comprehensive environmental health monitoring dashboard that pro
   - Historical AQI data
   - Region-specific standards (US EPA / UAQI)
 
+- **🧠 Custom ML Model**
+
+  - Custom-built spatiotemporal ML model for AQI forecasting
+  - Deep neural network architecture with 7 input features
+  - Trained on comprehensive EPA dataset (2000-2023)
+  - Real-time predictions for:
+    - O₃, CO, SO₂, NO₂ concentrations
+    - Pollutant-specific AQI values
+    - Peak hours and maximum values
+    - Overall air quality risk assessment
+  - Custom data preprocessing pipeline for geocoding and feature engineering
+  - Check out our [ML Repository](https://github.com/blakerand/atmosphere-ml) to see how the model was built and [EPA Dataset](https://www.kaggle.com/datasets/guslovesmath/us-pollution-data-200-to-2022/data) to see the data used to train the model.
+
 - **UV Index**
 
   - Current UV levels
@@ -35,18 +48,6 @@ Atmosphere is a comprehensive environmental health monitoring dashboard that pro
   - Tree pollen levels
   - Weed pollen measurements
   - Risk assessments for each type
-
-- **🧠 Custom ML Model**
-  - Custom-built spatiotemporal ML model for AQI forecasting
-  - Deep neural network architecture with 7 input features
-  - Trained on comprehensive EPA dataset (2000-2023)
-  - Real-time predictions for:
-    - O₃, CO, SO₂, NO₂ concentrations
-    - Pollutant-specific AQI values
-    - Peak hours and maximum values
-    - Overall air quality risk assessment
-  - Custom data preprocessing pipeline for geocoding and feature engineering
-  - Check out our [ML Repository](https://github.com/blakerand/atmosphere-ml) to see how the model was built and [EPA Dataset](https://www.kaggle.com/datasets/guslovesmath/us-pollution-data-200-to-2022/data) to see the data used to train the model.
 
 ### 🏥 Health Recommendations
 
