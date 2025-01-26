@@ -2,6 +2,8 @@
 
 [Experience the Website Live Now @ https://atmosphere.wiki](https://atmosphere.wiki)
 
+[Check out our ML Model on GitHub](https://github.com/blakerand/atmosphere-ml)
+
 
 ![Atmosphere Logo](public/images/1.png)
 ![Image of Atmosphere Map](public/images/2.png)
