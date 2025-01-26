@@ -287,7 +287,7 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
@@ -298,15 +298,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🏆 Hackathon Context
 
-This project was developed for Swamphacks with the goal of creating a comprehensive environmental health monitoring solution. It addresses the growing need for accessible, real-time environmental data to help people make informed decisions about their outdoor activities and health precautions.
+This project was developed for Swamphacks with the goal of creating a comprehensive environmental health monitoring solution. It addresses the growing need for AI-based accessible, real-time environmental data to help people make informed decisions about their outdoor activities and health precautions.
 
 ### Problem Statement
 
-With increasing environmental concerns and health consciousness, there's a need for a unified platform that provides comprehensive environmental health data in an accessible and actionable format.
+With increasing environmental concerns and health consciousness, there's a need for a unified AI platform that provides comprehensive environmental health data in an accessible and actionable format.
 
 ### Solution
 
-Atmosphere combines multiple environmental health metrics into a single, intuitive interface, making it easy for users to:
+Atmosphere combines multiple AI predicted and current environmental health metrics into a single, intuitive interface, making it easy for users to:
 
 - Monitor local environmental conditions
 - Plan outdoor activities safely
