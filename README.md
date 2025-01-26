@@ -1,6 +1,8 @@
 # Atmosphere - AI Environmental Health Dashboard
 
 ![Atmosphere Logo](public/images/1.png)
+![Image of Atmosphere Map](public/images/2.png)
+![Image 2 of Atmosphere Map](public/images/3.png)
 
 Atmosphere is a comprehensive environmental health monitoring dashboard that provides real-time insights into air quality, UV exposure, and pollen levels across the globe. Built with modern web technologies and designed with a beautiful, intuitive interface, it helps users make informed decisions about their outdoor activities.
 
