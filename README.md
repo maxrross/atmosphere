@@ -84,16 +84,17 @@ Atmosphere is a comprehensive environmental health monitoring dashboard that pro
 
 ### Machine Learning & Data Processing
 
-- [TensorFlow.js](https://www.tensorflow.org/js) - Deep learning model deployment
-- Custom Neural Network Architecture
-  - Multi-layer perceptron
-  - Temporal feature engineering
-  - Geospatial data integration
-- Data Processing Pipeline
-  - Census Batch Geocoding API
-  - EPA historical data integration
-  - Custom feature normalization
-  - Cyclic time encoding
+- [TensorFlow.js](https://www.tensorflow.org/js) - Neural network training and deployment
+- [Node.js](https://nodejs.org/) - Data preprocessing and API integration
+- Custom ML Pipeline
+  - Data cleaning and geocoding using Census API
+  - Feature engineering for time-based patterns
+  - Training on 20+ years of EPA pollution data
+  - Real-time inference for predictions
+- Data Visualization
+  - [Recharts](https://recharts.org/) - Interactive prediction charts
+  - Time series forecasting display
+  - AQI trend visualization
 
 ### Environmental Data APIs
 
