@@ -77,6 +77,9 @@ export const FireConditionsPanel: FC<FireConditionsPanelProps> = ({
   };
 
   const handleSimulation = async () => {
+    // Clear any existing simulation first
+    setSimulationData(null);
+    setShowOverlay(false);
     setIsSimulating(true);
     try {
       console.log("Starting simulation with:", { lat, lng, address });
