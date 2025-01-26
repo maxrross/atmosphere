@@ -142,9 +142,9 @@ const PollutantRow = ({
         </div>
       </TooltipTrigger>
       <TooltipContent
-        side="left"
-        sideOffset={20}
-        className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200/50 p-3 text-xs space-y-2 w-80"
+        side="top"
+        sideOffset={5}
+        className="bg-white rounded-lg shadow-lg border border-slate-200/50 p-3 text-xs space-y-2 w-80"
       >
         <div className="font-medium text-slate-900 mb-1">
           {
