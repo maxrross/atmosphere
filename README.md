@@ -163,12 +163,10 @@ Atmosphere is a comprehensive environmental health monitoring dashboard that pro
 - [Google Air Quality API](https://developers.google.com/maps/documentation/air-quality)
   - Real-time air quality data
   - Air quality heatmap tiles
-- [OpenUV API](https://www.openuv.io/)
+  - Pollen forecasts
+- [FreeUV API](https://www.freepublicapis.com/free-uv-index-api)
   - UV index data
   - Safe exposure times
-- [Tomorrow.io](https://www.tomorrow.io/)
-  - Pollen forecasts
-  - Additional weather metrics
 
 ## 🤖 AI Architecture
 
