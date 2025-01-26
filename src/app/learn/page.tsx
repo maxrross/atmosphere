@@ -1,24 +1,26 @@
-import Image from 'next/image';
-import { AnimatedSection } from './components/AnimatedSection';
-import { AQIChart } from './components/AQIChart';
-import { TechStack } from './components/TechStack';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react/no-unescaped-entities */
+import Image from "next/image";
+import { AnimatedSection } from "./components/AnimatedSection";
+import { AQIChart } from "./components/AQIChart";
+import { TechStack } from "./components/TechStack";
 
 const sampleData = [
-  { name: 'Jan', aqi: 50 },
-  { name: 'Feb', aqi: 45 },
-  { name: 'Mar', aqi: 60 },
-  { name: 'Apr', aqi: 55 },
-  { name: 'May', aqi: 70 },
-  { name: 'Jun', aqi: 65 },
+  { name: "Jan", aqi: 50 },
+  { name: "Feb", aqi: 45 },
+  { name: "Mar", aqi: 60 },
+  { name: "Apr", aqi: 55 },
+  { name: "May", aqi: 70 },
+  { name: "Jun", aqi: 65 },
 ];
 
 const techStack = [
-  { name: 'Next.js', logo: '/logos/nextjs.svg' },
-  { name: 'TypeScript', logo: '/logos/typescript.svg' },
-  { name: 'TailwindCSS', logo: '/logos/tailwind.svg' },
-  { name: 'TensorFlow', logo: '/logos/tensorflow.svg' },
-  { name: 'Google Cloud', logo: '/logos/google-cloud.svg' },
-  { name: 'Framer Motion', logo: '/logos/framer.svg' },
+  { name: "Next.js", logo: "/logos/nextjs.svg" },
+  { name: "TypeScript", logo: "/logos/typescript.svg" },
+  { name: "TailwindCSS", logo: "/logos/tailwind.svg" },
+  { name: "TensorFlow", logo: "/logos/tensorflow.svg" },
+  { name: "Google Cloud", logo: "/logos/google-cloud.svg" },
+  { name: "Framer Motion", logo: "/logos/framer.svg" },
 ];
 
 export default function LearnPage() {
@@ -35,9 +37,16 @@ export default function LearnPage() {
           <AnimatedSection delay={0.2} className="mb-12">
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div className="flex flex-col justify-center">
-                <h2 className="text-2xl font-bold text-slate-900 mb-4">Overview</h2>
+                <h2 className="text-2xl font-bold text-slate-900 mb-4">
+                  Overview
+                </h2>
                 <p className="text-slate-600">
-                  Atmosphere is a comprehensive environmental health monitoring dashboard that provides real-time insights into air quality, UV exposure, and pollen levels across the globe. Built with modern web technologies and designed with a beautiful, intuitive interface, it helps users make informed decisions about their outdoor activities.
+                  Atmosphere is a comprehensive environmental health monitoring
+                  dashboard that provides real-time insights into air quality,
+                  UV exposure, and pollen levels across the globe. Built with
+                  modern web technologies and designed with a beautiful,
+                  intuitive interface, it helps users make informed decisions
+                  about their outdoor activities.
                 </p>
               </div>
               <AQIChart />
@@ -45,15 +54,21 @@ export default function LearnPage() {
           </AnimatedSection>
 
           <AnimatedSection delay={0.4} className="mb-12">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">Technical Stack</h2>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">
+              Technical Stack
+            </h2>
             <TechStack />
           </AnimatedSection>
 
           <AnimatedSection delay={0.6} className="mb-12">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">Custom ML Model</h2>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">
+              Custom ML Model
+            </h2>
             <div className="grid md:grid-cols-2 gap-8">
               <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 shadow-sm">
-                <h3 className="text-xl font-semibold text-slate-800 mb-3">TensorFlow Architecture</h3>
+                <h3 className="text-xl font-semibold text-slate-800 mb-3">
+                  TensorFlow Architecture
+                </h3>
                 <div className="relative h-48 mb-4 bg-slate-100 rounded-lg overflow-hidden">
                   <Image
                     src="/images/ml-architecture.svg"
@@ -63,18 +78,29 @@ export default function LearnPage() {
                   />
                 </div>
                 <p className="text-slate-600">
-                  Our custom TensorFlow model utilizes a deep neural network architecture specifically designed for environmental data processing. The model incorporates:
+                  Our custom TensorFlow model utilizes a deep neural network
+                  architecture specifically designed for environmental data
+                  processing. The model incorporates:
                 </p>
                 <ul className="space-y-2 text-slate-600 mt-4">
-                  <li>• Multiple LSTM layers for temporal pattern recognition</li>
-                  <li>• Spatial convolution layers for geographic feature extraction</li>
-                  <li>• Attention mechanisms for focusing on critical data points</li>
+                  <li>
+                    • Multiple LSTM layers for temporal pattern recognition
+                  </li>
+                  <li>
+                    • Spatial convolution layers for geographic feature
+                    extraction
+                  </li>
+                  <li>
+                    • Attention mechanisms for focusing on critical data points
+                  </li>
                   <li>• Custom loss functions optimized for AQI prediction</li>
                 </ul>
               </div>
               <div className="space-y-6">
                 <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 shadow-sm">
-                  <h3 className="text-xl font-semibold text-slate-800 mb-3">Model Performance</h3>
+                  <h3 className="text-xl font-semibold text-slate-800 mb-3">
+                    Model Performance
+                  </h3>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-slate-600">Training Accuracy</span>
@@ -84,7 +110,9 @@ export default function LearnPage() {
                       <span className="text-slate-800 font-medium">92%</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-600">Validation Accuracy</span>
+                      <span className="text-slate-600">
+                        Validation Accuracy
+                      </span>
                       <div className="w-48 h-2 bg-slate-200 rounded-full overflow-hidden">
                         <div className="w-[89%] h-full bg-blue-500 rounded-full"></div>
                       </div>
@@ -93,7 +121,9 @@ export default function LearnPage() {
                   </div>
                 </div>
                 <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 shadow-sm">
-                  <h3 className="text-xl font-semibold text-slate-800 mb-3">Training Dataset</h3>
+                  <h3 className="text-xl font-semibold text-slate-800 mb-3">
+                    Training Dataset
+                  </h3>
                   <p className="text-slate-600">
                     Trained on over 20 years of EPA data (2000-2023), including:
                   </p>
@@ -109,13 +139,18 @@ export default function LearnPage() {
           </AnimatedSection>
 
           <AnimatedSection delay={0.8} className="mb-12">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">Pollen Forecasting</h2>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">
+              Pollen Forecasting
+            </h2>
             <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 shadow-sm">
               <div className="grid md:grid-cols-2 gap-8">
                 <div>
-                  <h3 className="text-xl font-semibold text-slate-800 mb-3">Google Pollen API Integration</h3>
+                  <h3 className="text-xl font-semibold text-slate-800 mb-3">
+                    Google Pollen API Integration
+                  </h3>
                   <p className="text-slate-600 mb-4">
-                    We leverage Google's advanced pollen forecasting system to provide accurate predictions for:
+                    We leverage Google's advanced pollen forecasting system to
+                    provide accurate predictions for:
                   </p>
                   <ul className="space-y-2 text-slate-600">
                     <li>• Tree pollen levels</li>
@@ -137,10 +172,14 @@ export default function LearnPage() {
           </AnimatedSection>
 
           <AnimatedSection delay={1} className="mb-12">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">Key Features</h2>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">
+              Key Features
+            </h2>
             <div className="grid md:grid-cols-3 gap-8">
               <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-800 mb-3">Environmental Monitoring</h3>
+                <h3 className="text-lg font-semibold text-slate-800 mb-3">
+                  Environmental Monitoring
+                </h3>
                 <ul className="space-y-2 text-slate-600 text-sm">
                   <li>• Real-time AQI measurements</li>
                   <li>• Detailed pollutant breakdowns</li>
@@ -149,7 +188,9 @@ export default function LearnPage() {
                 </ul>
               </div>
               <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-800 mb-3">Predictive Analytics</h3>
+                <h3 className="text-lg font-semibold text-slate-800 mb-3">
+                  Predictive Analytics
+                </h3>
                 <ul className="space-y-2 text-slate-600 text-sm">
                   <li>• Custom ML model for AQI forecasting</li>
                   <li>• Deep neural network architecture</li>
@@ -158,7 +199,9 @@ export default function LearnPage() {
                 </ul>
               </div>
               <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-800 mb-3">Interactive Features</h3>
+                <h3 className="text-lg font-semibold text-slate-800 mb-3">
+                  Interactive Features
+                </h3>
                 <ul className="space-y-2 text-slate-600 text-sm">
                   <li>• Beautiful hybrid satellite/terrain view</li>
                   <li>• Global coverage with street-level data</li>
@@ -170,15 +213,24 @@ export default function LearnPage() {
           </AnimatedSection>
 
           <AnimatedSection delay={1.2} className="mb-12">
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">Data Sources</h2>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">
+              Data Sources
+            </h2>
             <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 shadow-sm">
               <p className="text-slate-600 mb-4">
-                Atmosphere aggregates data from multiple reliable sources to provide accurate environmental information:
+                Atmosphere aggregates data from multiple reliable sources to
+                provide accurate environmental information:
               </p>
               <ul className="space-y-2 text-slate-600">
-                <li>• Google Air Quality API for real-time air quality data and heatmap tiles</li>
+                <li>
+                  • Google Air Quality API for real-time air quality data and
+                  heatmap tiles
+                </li>
                 <li>• OpenUV API for UV index data and safe exposure times</li>
-                <li>• Google Pollen API for pollen forecasts and additional weather metrics</li>
+                <li>
+                  • Google Pollen API for pollen forecasts and additional
+                  weather metrics
+                </li>
                 <li>• EPA historical data for model training and validation</li>
                 <li>• Custom ML predictions for long-term forecasting</li>
               </ul>
@@ -188,4 +240,4 @@ export default function LearnPage() {
       </div>
     </div>
   );
-} 
+}

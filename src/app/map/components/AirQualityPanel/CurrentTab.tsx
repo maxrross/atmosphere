@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Wind, Calendar, Droplets, Mountain, Sun } from "lucide-react";
 import {
   Tooltip,
@@ -304,7 +305,9 @@ const UVSection = ({ uvData }: { uvData?: LocationData["uvData"] }) => (
         <div className="flex justify-between items-center">
           <span className="text-slate-500 text-xs">Safe Exposure</span>
           <span className="text-xs text-slate-700">
-            {uvData.safeExposureMinutes === -1 ? "Unlimited" : `${Math.round(uvData.safeExposureMinutes)} min`}
+            {uvData.safeExposureMinutes === -1
+              ? "Unlimited"
+              : `${Math.round(uvData.safeExposureMinutes)} min`}
           </span>
         </div>
       </div>
