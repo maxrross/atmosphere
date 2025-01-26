@@ -1,6 +1,6 @@
 # Atmosphere - AI Environmental Health Dashboard
 
-[Experience the Website Live Now](https://atmosphere.wiki)
+[Experience the Website Live Now @ https://atmosphere.wiki](https://atmosphere.wiki)
 
 
 ![Atmosphere Logo](public/images/1.png)
