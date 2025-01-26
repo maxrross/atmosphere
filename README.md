@@ -1,4 +1,4 @@
-# Atmosphere - Environmental Health Dashboard
+# Atmosphere - AI Environmental Health Dashboard
 
 ![Atmosphere Logo](public/images/1.png)
 
